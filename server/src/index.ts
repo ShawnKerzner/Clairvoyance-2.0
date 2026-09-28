@@ -13,6 +13,10 @@ app.get('/api/db-test', async (req, res) => {
     res.status(200).json(result.rows[0].now)
 });
 
+app.post('/api/auth/signup', (req, res) => {
+    
+})
+
 app.listen(3000, () => {
     console.log("server is listening on port 3000...")
 });
