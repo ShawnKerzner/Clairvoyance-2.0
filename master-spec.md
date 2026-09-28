@@ -53,8 +53,9 @@ A hand-built remake of the Base44 hackathon app. Beginner coders paste a LeetCod
 
 **Key decisions**
 - **Claude calls happen server-side** so the hidden reference solution never reaches the browser (DevTools Network tab would expose it).
-- **API key lives in the user's browser only** (`localStorage`), sent with each request, used by the server for that call and never stored. Server holds nothing sensitive; trade-off is re-entering the key on a new device.
-- **XSS rule:** because the key sits in `localStorage`, AI-generated and user-pasted text is always inserted into the page as plain text, never as HTML.
+- **API key lives in the user's browser only, in an `httpOnly` cookie** (changed from `localStorage`). The browser sends it automatically; the server uses it per call and never stores it. JavaScript (including injected XSS scripts) can't read it. Trade-offs: re-enter on a new device; the page asks the server whether a key is connected.
+- **Session token also lives in an `httpOnly` cookie**, set by the server at login.
+- **XSS rule (still applies):** AI-generated and user-pasted text is always inserted into the page as plain text, never as HTML.
 
 ---
 
@@ -91,3 +92,39 @@ Each chunk goes through frontend, backend and database together, so there's a wo
 
 ## Chunk notes
 *(Filled in as each chunk is built: data model, endpoints, decisions, gotchas.)*
+
+### Project setup (done)
+- Repo: `client/` (Vite vanilla-ts) + `server/` (Express + TS) + `master-spec.md`; `.gitignore` has `node_modules`, `.env`
+- Server dev script: `tsx watch --env-file=.env src/index.ts`; `"type": "module"` (imports use `.js` extension)
+- `server/.env` holds `DATABASE_URL` (special chars in password URL-encoded, e.g. `@` → `%40`)
+- `server/src/db.ts` exports one shared `pg.Pool`
+- `server/db/schema.sql` = record of every table (structure only, no queries)
+- Test routes: `GET /api/health`, `GET /api/db-test`
+
+### Chunk 1: Accounts + API key (in progress)
+**Auth approach:** server-side sessions stored in Postgres (chosen over JWT for DB practice and easy logout). The server trusts only tokens it issued, never user ids sent by the browser.
+
+**Tables**
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(15) UNIQUE NOT NULL,
+  password_hash VARCHAR(60) NOT NULL   -- bcrypt hashes are always 60 chars
+);
+
+CREATE TABLE sessions (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  token VARCHAR(64) PRIMARY KEY,         -- 32 random bytes as hex
+  expires_at TIMESTAMPTZ NOT NULL
+);
+```
+- Naming: login tokens live in `sessions`; exercise attempts will be a separate `exercises` table.
+
+**Endpoints**
+- `POST /api/auth/signup`: create an account
+- `POST /api/auth/login`: check credentials, issue a session token (`httpOnly` cookie)
+- `POST /api/auth/logout`: delete the session row and clear the cookie
+- `POST /api/api-key`: key in the body; server sets it as an `httpOnly` cookie
+- `GET /api/api-key`: returns only `{ connected: true | false }`, never the key
+- `DELETE /api/api-key`: clears the key cookie
+- Sensitive data (passwords, tokens, API keys) goes in the body or headers, never the URL.

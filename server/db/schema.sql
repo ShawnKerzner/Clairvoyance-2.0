@@ -1,0 +1,11 @@
+CREATE TABLE users (
+	id SERIAL PRIMARY KEY,
+	username VARCHAR(15) UNIQUE NOT NULL,
+	password_hash VARCHAR(60) NOT NULL
+);
+
+CREATE TABLE sessions (
+	user_id INTEGER NOT NULL REFERENCES users(id),
+	token VARCHAR(64) PRIMARY KEY,
+	expires_at TIMESTAMPTZ NOT NULL
+);
