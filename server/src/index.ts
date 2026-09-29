@@ -1,6 +1,7 @@
 import express from "express";
 const app = express();
 import { pool } from "./db.js";
+app.use(express.json());
 
 
 
@@ -14,7 +15,15 @@ app.get('/api/db-test', async (req, res) => {
 });
 
 app.post('/api/auth/signup', (req, res) => {
-    
+    const username = req.body.username;
+    const password = req.body.password;
+    if (!username|| !password) {
+        res.status(400).json({Error: "Username or Password is empty."})
+    } else if (username.length > 15) {
+        res.status(400).json({Error: "Username must be 15 characters or less."})
+    } else {
+        res.status(201).json({Success: `Welcome ${username}!`})
+    }
 })
 
 app.listen(3000, () => {
