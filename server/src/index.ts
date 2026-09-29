@@ -2,6 +2,7 @@ import express from "express";
 const app = express();
 import { pool } from "./db.js";
 app.use(express.json());
+import bcrypt from "bcryptjs";
 
 
 
@@ -26,7 +27,9 @@ app.post('/api/auth/signup', async (req, res) => {
         if(result.rows.length === 1) {
             res.status(409).json({ Error: "Username already taken." })
         } else {
-            res.status(201).json({Success: `Welcome ${username}!`})
+            const passwordHash = await bcrypt.hash(password, 10);
+            const insertResult = await pool.query("INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username", [username, passwordHash]);
+            res.status(201).json(insertResult.rows[0]);
         }
         
     }
