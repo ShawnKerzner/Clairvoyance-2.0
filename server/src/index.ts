@@ -14,7 +14,7 @@ app.get('/api/db-test', async (req, res) => {
     res.status(200).json(result.rows[0].now)
 });
 
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
     if (!username|| !password) {
@@ -22,9 +22,15 @@ app.post('/api/auth/signup', (req, res) => {
     } else if (username.length > 15) {
         res.status(400).json({Error: "Username must be 15 characters or less."})
     } else {
-        res.status(201).json({Success: `Welcome ${username}!`})
+        const result = await pool.query("SELECT username FROM users WHERE username = $1", [username]);
+        if(result.rows.length === 1) {
+            res.status(409).json({ Error: "Username already taken." })
+        } else {
+            res.status(201).json({Success: `Welcome ${username}!`})
+        }
+        
     }
-})
+});
 
 app.listen(3000, () => {
     console.log("server is listening on port 3000...")
