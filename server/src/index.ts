@@ -39,17 +39,18 @@ app.post('/api/auth/login', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
     if (!username || !password) {
-        res.status(400).json({ Error: "Username or password is empty"})
+        res.status(400).json({ Error: "Username or password is empty"});
     } else {
         const userResult = await pool.query("SELECT id, username, password_hash FROM users WHERE username = $1", [username]);
         if (userResult.rows.length === 0) {
-            res.status(401).json({Error: "Username or password is incorrect."})
+            res.status(401).json({Error: "Username or password is incorrect."});
         } else {
-            const passwordMatch = await bcrypt.compare(password,userResult.rows[0].password_hash)
+            const passwordMatch = await bcrypt.compare(password,userResult.rows[0].password_hash);
             if (!passwordMatch) {
-                 res.status(401).json({Error: "Username or password is incorrect."})
+                 res.status(401).json({Error: "Username or password is incorrect."});
             } else {
-                res.status(200).json({ Success: `Welcome back ${username}!`})
+                await createSession(userResult.rows[0].id, res);
+                res.status(200).json({id: userResult.rows[0].id, username: username});
             }
         }
     }
