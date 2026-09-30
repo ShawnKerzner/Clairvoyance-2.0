@@ -3,6 +3,7 @@ const app = express();
 import { pool } from "./db.js";
 app.use(express.json());
 import bcrypt from "bcryptjs";
+import { createSession } from "./sessions.js";
 
 
 
@@ -29,9 +30,9 @@ app.post('/api/auth/signup', async (req, res) => {
         } else {
             const passwordHash = await bcrypt.hash(password, 10);
             const insertResult = await pool.query("INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username", [username, passwordHash]);
+            await createSession(insertResult.rows[0].id, res);
             res.status(201).json(insertResult.rows[0]);
-        }
-        
+        }   
     }
 });
 
