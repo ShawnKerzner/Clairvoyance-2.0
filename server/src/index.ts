@@ -59,7 +59,12 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/logout', async (req, res) => {
-
+    const token = req.cookies.session;
+    if(token) {
+        await pool.query("DELETE FROM sessions WHERE token = $1", [token]);
+    }
+    res.clearCookie("session");
+    res.sendStatus(204);
 });
 
 app.listen(3000, () => {
