@@ -3,6 +3,7 @@ import { pool } from "./db.js";
 import bcrypt from "bcryptjs";
 import { createSession } from "./sessions.js";
 import cookieParser from "cookie-parser";
+import { requireAuth } from "./auth.js";
 
 const app = express();
 app.use(express.json());
@@ -66,6 +67,11 @@ app.post('/api/auth/logout', async (req, res) => {
     res.clearCookie("session");
     res.sendStatus(204);
 });
+
+app.get('/api/auth/me', requireAuth, (req, res) => {
+    res.status(200).json({ userId: res.locals.userId})
+});
+
 
 app.listen(3000, () => {
     console.log("server is listening on port 3000...")
