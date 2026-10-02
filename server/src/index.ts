@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { createSession } from "./sessions.js";
 import cookieParser from "cookie-parser";
 import { requireAuth } from "./auth.js";
+import type { connected } from "node:process";
 
 const app = express();
 app.use(express.json());
@@ -70,6 +71,15 @@ app.post('/api/auth/logout', async (req, res) => {
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
     res.status(200).json({ userId: res.locals.userId})
+});
+
+app.post('/api/api-key', requireAuth, (req, res) => {
+    const apiKey = req.body.apiKey;
+    if(!apiKey) {
+        res.status(400).json({ Error: "Anthropic key required."});
+        return;
+    }
+    res.status(200).json({ connected: true});
 });
 
 

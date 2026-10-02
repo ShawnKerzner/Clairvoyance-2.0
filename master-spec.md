@@ -3,7 +3,7 @@
 A hand-built remake of the Base44 hackathon app. Beginner coders paste a LeetCode-style exercise and are guided Socratically from understanding to working code, never handed the answer early.
 
 **Target user:** beginner coders who struggle to connect what they've learned to actually solving a problem.
-**Timeline:** ~1 week.
+**Timeline:** one week of focused building now (before class resumes); the project later becomes the course capstone, so the MVP can keep growing after this week.
 **Languages supported:** JavaScript and Python (student picks per exercise).
 
 ---
@@ -73,7 +73,7 @@ Each chunk goes through frontend, backend and database together, so there's a wo
 
 | Chunk | Status |
 | --- | --- |
-| 1. Accounts + API key | Not started |
+| 1. Accounts + API key | In progress |
 | 2. Intake + silent solve | Not started |
 | 3. Understanding Check | Not started |
 | 4. Logic Walkthrough | Not started |
@@ -86,7 +86,6 @@ Each chunk goes through frontend, backend and database together, so there's a wo
 ## Open questions (parked)
 - Exact edge-case flow in the Logic Walkthrough (chunk 4)
 - Making API key setup intuitive for beginners (chunk 1)
-- TypeScript live-reload setup for the backend (chunk 1 setup)
 
 ---
 
@@ -124,7 +123,23 @@ CREATE TABLE sessions (
 - `POST /api/auth/signup`: create an account
 - `POST /api/auth/login`: check credentials, issue a session token (`httpOnly` cookie)
 - `POST /api/auth/logout`: delete the session row and clear the cookie
+- `GET /api/auth/me` (protected): returns `{ userId }` for the logged-in student
 - `POST /api/api-key`: key in the body; server sets it as an `httpOnly` cookie
 - `GET /api/api-key`: returns only `{ connected: true | false }`, never the key
 - `DELETE /api/api-key`: clears the key cookie
 - Sensitive data (passwords, tokens, API keys) goes in the body or headers, never the URL.
+
+**Session expiry**
+- Sessions last 45 minutes. Every request that uses a session must check `expires_at`.
+- Planned feature: a "stay signed in?" prompt shown before expiry that extends the session (needs its own endpoint). **Backlogged: build after chunk 7.**
+- Cleanup: `createSession` deletes expired rows (`DELETE FROM sessions WHERE expires_at < NOW()`) before inserting, so it runs on every login and signup.
+
+**Progress**
+- ✅ `createSession(userId, res)` in `server/src/sessions.ts`: 32-byte hex token, `expires_at` = now + 45 min, inserts session row, sets `session` cookie (`httpOnly`, expires with the session)
+- ✅ `POST /api/auth/signup`: validation (400) → duplicate check (409) → bcrypt hash → insert `RETURNING id, username` → `createSession` → 201 `{ id, username }`
+- ✅ `POST /api/auth/login`: validation (400) → lookup by username → `bcrypt.compare` → same 401 "Username or password is incorrect." for unknown user or wrong password → `createSession` → 200 `{ id, username }`
+- ✅ `POST /api/auth/logout`: if a token cookie exists, delete its row; always clear the cookie and respond 204 (also 204 with no cookie)
+- ✅ `cookie-parser` registered; token read from `req.cookies.session`
+- ✅ `requireAuth` middleware in `server/src/auth.ts`: no cookie → 401; no session row matching the token with `expires_at > NOW()` → 401; otherwise sets `res.locals.userId` and calls `next()`. Attached per route: `app.get(path, requireAuth, handler)`
+- ✅ `GET /api/auth/me` (protected): 200 `{ userId }`, used by the frontend to check who's logged in
+- ⏭️ Next: API key endpoints, frontend screens
