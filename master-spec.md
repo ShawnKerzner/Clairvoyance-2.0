@@ -85,7 +85,7 @@ Each chunk goes through frontend, backend and database together, so there's a wo
 
 ## Open questions (parked)
 - Exact edge-case flow in the Logic Walkthrough (chunk 4)
-- Making API key setup intuitive for beginners (chunk 1)
+- Making API key setup intuitive for beginners (chunk 1). Must explain that a Claude subscription (Pro/Max) does not include API access; the API is billed separately through Console credits.
 
 ---
 
@@ -142,4 +142,13 @@ CREATE TABLE sessions (
 - ✅ `cookie-parser` registered; token read from `req.cookies.session`
 - ✅ `requireAuth` middleware in `server/src/auth.ts`: no cookie → 401; no session row matching the token with `expires_at > NOW()` → 401; otherwise sets `res.locals.userId` and calls `next()`. Attached per route: `app.get(path, requireAuth, handler)`
 - ✅ `GET /api/auth/me` (protected): 200 `{ userId }`, used by the frontend to check who's logged in
-- ⏭️ Next: API key endpoints, frontend screens
+- ✅ `POST /api/api-key` (protected): missing key → 400; verify with `client.models.list()` (free, no tokens) inside try/catch, invalid → 400 with an actionable message; set `apiKey` cookie (`httpOnly`, 7 days); 200 `{ connected: true }`
+- ✅ `GET /api/api-key` (protected): 200 `{ connected: true | false }` based on whether the `apiKey` cookie exists
+- ✅ `DELETE /api/api-key` (protected): clears the `apiKey` cookie, 204
+- ✅ Logout also clears the `apiKey` cookie (protects shared computers)
+- ⏭️ Next: chunk 1 frontend screens
+
+**API key rules**
+- Key cookie lasts 7 days (separate from the 45-minute session). Setup screen tells students to log out on shared computers.
+- Never put `ANTHROPIC_API_KEY` in the server's `.env`. The Anthropic SDK silently falls back to that variable when it gets no key, which would bill the developer for students' usage.
+- Always check the `apiKey` cookie exists before creating an Anthropic client.

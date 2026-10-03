@@ -68,6 +68,7 @@ app.post('/api/auth/logout', async (req, res) => {
         await pool.query("DELETE FROM sessions WHERE token = $1", [token]);
     }
     res.clearCookie("session");
+    res.clearCookie("apiKey");
     res.sendStatus(204);
 });
 
@@ -98,6 +99,11 @@ app.get('/api/api-key', requireAuth, (req, res) => {
         return;
     }
     res.status(200).json({ connected: true});
+});
+
+app.delete('/api/api-key', requireAuth, (req, res) => {
+    res.clearCookie("apiKey");
+    res.sendStatus(204);
 });
 
 app.listen(3000, () => {
