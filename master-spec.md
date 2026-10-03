@@ -148,6 +148,14 @@ CREATE TABLE sessions (
 - ✅ Logout also clears the `apiKey` cookie (protects shared computers)
 - ⏭️ Next: chunk 1 frontend screens
 
+**Frontend (chunk 1)**
+- Single-page app: one `index.html` with `<div id="app">`; each screen is a `render...` function; `showScreen(render)` clears `#app` (`innerHTML = ""`) and draws the new screen.
+- Vite dev proxy (`client/vite.config.ts`) forwards `/api` to `localhost:3000`, so the browser stays same-origin (no CORS, cookies just work). Frontend code uses relative paths like `/api/auth/login`.
+- Startup flow on every page load: `GET /api/auth/me` → 401 → Login; 200 → `GET /api/api-key` → `connected: false` → API key setup; `true` → exercise page (placeholder until chunk 2). After login/signup, jump to the key check.
+- Valid session = stay logged in (normal website behavior), including after refresh or reopening the tab.
+- Login screen: heading, red error area (top of form, empty at first), username input, password input (`type="password"`), submit button, "Sign up" link.
+- Static markup written by us may use `innerHTML`; anything from the server or the user goes in with `textContent`.
+
 **API key rules**
 - Key cookie lasts 7 days (separate from the 45-minute session). Setup screen tells students to log out on shared computers.
 - Never put `ANTHROPIC_API_KEY` in the server's `.env`. The Anthropic SDK silently falls back to that variable when it gets no key, which would bill the developer for students' usage.
