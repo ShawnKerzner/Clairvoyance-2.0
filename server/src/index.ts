@@ -5,9 +5,11 @@ import { createSession } from "./sessions.js";
 import cookieParser from "cookie-parser";
 import { requireAuth } from "./auth.js";
 import type { connected } from "node:process";
+import Anthropic from "@anthropic-ai/sdk";
 
 const app = express();
 app.use(express.json());
+
 app.use(cookieParser());
 
 app.get('/api/health', (req, res) => {
@@ -73,15 +75,21 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
     res.status(200).json({ userId: res.locals.userId})
 });
 
-app.post('/api/api-key', requireAuth, (req, res) => {
+app.post('/api/api-key', requireAuth, async (req, res) => {
     const apiKey = req.body.apiKey;
     if(!apiKey) {
         res.status(400).json({ Error: "Anthropic key required."});
         return;
     }
+    const client = new Anthropic({ apiKey: apiKey });
+    try {
+        await client.models.list();
+    } catch {
+        res.status(400).json({ Error: "That key didn't work. Check that you copied the whole key from your Anthropic console."});
+        return;
+    }
     res.status(200).json({ connected: true});
 });
-
 
 app.listen(3000, () => {
     console.log("server is listening on port 3000...")
