@@ -92,6 +92,14 @@ app.post('/api/api-key', requireAuth, async (req, res) => {
     res.status(200).json({ connected: true});
 });
 
+app.get('/api/api-key', requireAuth, (req, res) => {
+    if (!req.cookies.apiKey) {
+        res.status(200).json({ connected: false});
+        return;
+    }
+    res.status(200).json({ connected: true});
+});
+
 app.listen(3000, () => {
     console.log("server is listening on port 3000...")
 });
