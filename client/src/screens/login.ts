@@ -12,11 +12,36 @@ export const renderLogin = () => {
   </form>
   <p id="no-account-line">Don't have an account? <a href="#" id ="signup-link">Register Here</a>.</p>
   `
-  const signupLink = document.querySelector("#signup-link");
-  if (!signupLink) {
-    throw new Error("Couldn't find the #signup-link");
-  }
-  signupLink.addEventListener("click", () => {
-    showScreen(renderSignup);
-  });
+  setupSignupLink();
+    setupLoginForm();
+}
+
+const setupSignupLink = () => {
+    const signupLink = document.querySelector("#signup-link");
+    if (!signupLink) {
+        throw new Error("Couldn't find the #signup-link");
+    }
+    signupLink.addEventListener("click", () => {
+        showScreen(renderSignup);
+    })
+}
+
+
+const setupLoginForm = () => {
+    const loginForm = document.querySelector("#login-form");
+    if (!loginForm) {
+        throw new Error("Couldn't find the #login-form");
+    };
+    const usernameLogin = document.querySelector<HTMLInputElement>("#username-login");
+    if (!usernameLogin) {
+        throw new Error("Couldn't find the #username-login");
+    };
+    const passwordLogin = document.querySelector<HTMLInputElement>("#password-login");
+    if (!passwordLogin) {
+        throw new Error("Couldn't find the #password-login");
+    };
+    loginForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        console.log(usernameLogin.value, passwordLogin.value)
+    })
 }
