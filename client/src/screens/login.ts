@@ -26,11 +26,12 @@ const setupSignupLink = () => {
 
 const setupLoginForm = () => {
     const loginForm = findElement('#login-form');
-    loginForm.addEventListener("submit", (event) => {
+    loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const result = readLoginForm();
-        console.log(result)
-    })
+        const response = await sendUserInfo(result);
+        console.log(response.status);
+    });
 }
 
 const readLoginForm = () => {
@@ -42,4 +43,12 @@ const readLoginForm = () => {
     };
     return userInfoLogin;
 }
- 
+
+const sendUserInfo = async (credentials: {username: string; password: string}) => {
+    const response = await fetch('/api/auth/login', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+    });
+    return response;
+}
