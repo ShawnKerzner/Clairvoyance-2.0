@@ -26,11 +26,20 @@ const setupSignupLink = () => {
 
 const setupLoginForm = () => {
     const loginForm = findElement('#login-form');
-    const usernameLogin = findElement<HTMLInputElement>('#username-login');
-    const passwordLogin = findElement<HTMLInputElement>('#password-login');
     loginForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        console.log(usernameLogin.value, passwordLogin.value)
+        const result = readLoginForm();
+        console.log(result)
     })
 }
 
+const readLoginForm = () => {
+    const usernameLogin = findElement<HTMLInputElement>('#username-login');
+    const passwordLogin = findElement<HTMLInputElement>('#password-login');
+    const userInfoLogin = {
+        username: usernameLogin.value,
+        password: passwordLogin.value
+    };
+    return userInfoLogin;
+}
+ 
