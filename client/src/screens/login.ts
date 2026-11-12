@@ -29,13 +29,14 @@ const setupLoginForm = () => {
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const result = readLoginForm();
-        const response = await sendUserInfo(result);
-        if(!response.ok) {
+        try {
+             const response = await sendUserInfo(result);
+            if(!response.ok) {
             const data = await response.json();
-            console.log(data)
-            showLoginError(data.Error)
-        }
-        console.log(response.status);
+            showLoginError(data.Error)}
+        } catch (error) {
+            showLoginError("Can't reach the server, please try again")
+        };
     });
 }
 
