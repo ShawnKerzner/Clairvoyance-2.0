@@ -30,6 +30,11 @@ const setupLoginForm = () => {
         event.preventDefault();
         const result = readLoginForm();
         const response = await sendUserInfo(result);
+        if(!response.ok) {
+            const data = await response.json();
+            console.log(data)
+            showLoginError(data.Error)
+        }
         console.log(response.status);
     });
 }
@@ -51,4 +56,9 @@ const sendUserInfo = async (credentials: {username: string; password: string}) =
         body: JSON.stringify(credentials),
     });
     return response;
+}
+
+const showLoginError = (message: string) => {
+    const loginErrorElement = findElement('#login-error');
+    loginErrorElement.textContent = message
 }
