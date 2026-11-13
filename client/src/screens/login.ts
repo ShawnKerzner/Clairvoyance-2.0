@@ -1,6 +1,7 @@
 import { app, showScreen, findElement } from "../app.ts";
 import { showNextScreen } from "../navigation.ts";
 import { renderSignup } from "./signup.ts";
+import { sendUserInfo } from "../api.ts";
 
 export const renderLogin = () => {
   app.innerHTML = `
@@ -30,10 +31,11 @@ const setupLoginForm = () => {
     event.preventDefault();
     const result = readLoginForm();
     try {
-      const response = await sendUserInfo(result);
+      const response = await sendUserInfo("/api/auth/login", result);
       if (!response.ok) {
         const data = await response.json();
         showLoginError(data.Error);
+        return;
       }
       showNextScreen();
     } catch (error) {
@@ -50,18 +52,6 @@ const readLoginForm = () => {
     password: passwordLogin.value,
   };
   return userInfoLogin;
-};
-
-const sendUserInfo = async (credentials: {
-  username: string;
-  password: string;
-}) => {
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(credentials),
-  });
-  return response;
 };
 
 const showLoginError = (message: string) => {
