@@ -1,4 +1,4 @@
-import { app, showScreen, findElement } from "../app.ts";
+import { app, showScreen, findElement, showError } from "../app.ts";
 import { showNextScreen } from "../navigation.ts";
 import { renderSignup } from "./signup.ts";
 import { sendUserInfo } from "../api.ts";
@@ -34,12 +34,12 @@ const setupLoginForm = () => {
       const response = await sendUserInfo("/api/auth/login", result);
       if (!response.ok) {
         const data = await response.json();
-        showLoginError(data.Error);
+        showError("#login-error", data.Error);
         return;
       }
       showNextScreen();
     } catch (error) {
-      showLoginError("Can't reach the server, please try again");
+      showError("#login-error", "Can't reach the server, please try again");
     }
   });
 };
@@ -52,9 +52,4 @@ const readLoginForm = () => {
     password: passwordLogin.value,
   };
   return userInfoLogin;
-};
-
-const showLoginError = (message: string) => {
-  const loginErrorElement = findElement("#login-error");
-  loginErrorElement.textContent = message;
 };
