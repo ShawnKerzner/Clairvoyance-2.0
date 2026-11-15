@@ -1,4 +1,4 @@
-import { sendUserInfo } from "../api.ts";
+import { postJson } from "../api.ts";
 import { app, showScreen, findElement, showError } from "../app.ts";
 import { showNextScreen } from "../navigation.ts";
 import { renderLogin } from "./login.ts";
@@ -6,7 +6,7 @@ import { renderLogin } from "./login.ts";
 export const renderSignup = () => {
   app.innerHTML = `
   <h1>Create An Account</h1>
-  <p id ="signup-error"></p>
+  <p id="signup-error"></p>
   <form id ="signup-form">
         <input type="text" id="username-signup" placeholder="Username" />
         <input type="password" id="password-signup" placeholder="Password" />
@@ -40,7 +40,7 @@ const setupSignUpForm = () => {
       password: result.password,
     };
     try {
-      const response = await sendUserInfo("/api/auth/signup", newAccountInfo);
+      const response = await postJson("/api/auth/signup", newAccountInfo);
       if (!response.ok) {
         const data = await response.json();
         showError("#signup-error", data.Error);

@@ -1,7 +1,7 @@
 import { app, showScreen, findElement, showError } from "../app.ts";
 import { showNextScreen } from "../navigation.ts";
 import { renderSignup } from "./signup.ts";
-import { sendUserInfo } from "../api.ts";
+import { postJson } from "../api.ts";
 
 export const renderLogin = () => {
   app.innerHTML = `
@@ -31,7 +31,7 @@ const setupLoginForm = () => {
     event.preventDefault();
     const result = readLoginForm();
     try {
-      const response = await sendUserInfo("/api/auth/login", result);
+      const response = await postJson("/api/auth/login", result);
       if (!response.ok) {
         const data = await response.json();
         showError("#login-error", data.Error);
