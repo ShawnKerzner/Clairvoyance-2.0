@@ -1,4 +1,6 @@
+import { sendUserInfo } from "../api.ts";
 import { app, showScreen, findElement, showError } from "../app.ts";
+import { showNextScreen } from "../navigation.ts";
 import { renderLogin } from "./login.ts";
 
 export const renderSignup = () => {
@@ -32,6 +34,21 @@ const setupSignUpForm = () => {
     if (result.password !== result.confirmPassword) {
       showError("#signup-error", "Passwords do not match");
       return;
+    }
+    const newAccountInfo = {
+      username: result.username,
+      password: result.password,
+    };
+    try {
+      const response = await sendUserInfo("/api/auth/signup", newAccountInfo);
+      if (!response.ok) {
+        const data = await response.json();
+        showError("#signup-error", data.Error);
+        return;
+      }
+      showNextScreen();
+    } catch (error) {
+      showError("#signup-error", "Can't reach the server, please try again");
     }
   });
 };
