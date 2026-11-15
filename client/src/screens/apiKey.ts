@@ -1,4 +1,7 @@
-import { app } from "../app.ts";
+import { postJson } from "../api.ts";
+import { app, findElement, showError, showScreen } from "../app.ts";
+import { showNextScreen } from "../navigation.ts";
+import { renderLogin } from "./login.ts";
 
 export const renderApiKey = () => {
   app.innerHTML = `
@@ -24,4 +27,31 @@ export const renderApiKey = () => {
     </ul>
     <a href="#" id="logout-link">Logout</a>
   `;
+  setupApiKeyForm();
+};
+
+const setupApiKeyForm = () => {
+  const apiKeyForm = findElement("#api-form");
+  const apiInput = findElement<HTMLInputElement>("#api-key-input");
+  apiKeyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      const response = await postJson("/api/api-key", {
+        apiKey: apiInput.value,
+      });
+      if (response.status === 401) {
+        showScreen(renderLogin);
+        showError("#login-error", "Your session expired. Please log in again.");
+        return;
+      }
+      if (!response.ok) {
+        const data = await response.json();
+        showError("#api-error", data.Error);
+        return;
+      }
+      showNextScreen();
+    } catch (error) {
+      showError("#api-error", "Can't reach the server, please try again");
+    }
+  });
 };
