@@ -1,6 +1,6 @@
 import { postJson } from "../api.ts";
 import { app, findElement, showError, showScreen } from "../app.ts";
-import { showNextScreen } from "../navigation.ts";
+import { showNextScreen, logOut } from "../navigation.ts";
 import { renderLogin } from "./login.ts";
 
 export const renderApiKey = () => {
@@ -28,6 +28,7 @@ export const renderApiKey = () => {
     <a href="#" id="logout-link">Logout</a>
   `;
   setupApiKeyForm();
+  logOut("#api-error");
 };
 
 const setupApiKeyForm = () => {
