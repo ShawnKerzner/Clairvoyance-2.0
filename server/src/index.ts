@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import { createSession } from "./sessions.js";
 import cookieParser from "cookie-parser";
 import { requireAuth } from "./auth.js";
-import type { connected } from "node:process";
 import Anthropic from "@anthropic-ai/sdk";
 import { getOwnedApiKey } from "./apiKey.js";
 
