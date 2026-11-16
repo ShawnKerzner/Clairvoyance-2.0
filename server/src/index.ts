@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { requireAuth } from "./auth.js";
 import type { connected } from "node:process";
 import Anthropic from "@anthropic-ai/sdk";
+import { getOwnedApiKey } from "./apiKey.js";
 
 const app = express();
 app.use(express.json());
@@ -117,7 +118,8 @@ app.post("/api/api-key", requireAuth, async (req, res) => {
 });
 
 app.get("/api/api-key", requireAuth, (req, res) => {
-  if (!req.cookies.apiKey) {
+  const apiKey = getOwnedApiKey(req, res);
+  if (!apiKey) {
     res.status(200).json({ connected: false });
     return;
   }
