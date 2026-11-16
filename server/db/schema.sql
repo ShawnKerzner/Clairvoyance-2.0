@@ -23,4 +23,7 @@ CREATE TABLE exercises (
 	test_cases JSONB NOT NULL,
 	self_check_passed BOOLEAN NOT NULL,
 	self_check_notes TEXT,
+	current_stage VARCHAR(20) NOT NULL DEFAULT 'understanding',
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
 )
