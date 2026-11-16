@@ -10,103 +10,125 @@ import Anthropic from "@anthropic-ai/sdk";
 const app = express();
 app.use(express.json());
 
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: "ok"})
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
-app.get('/api/db-test', async (req, res) => {
-    const result = await pool.query("SELECT NOW()");
-    res.status(200).json(result.rows[0].now)
+app.get("/api/db-test", async (req, res) => {
+  const result = await pool.query("SELECT NOW()");
+  res.status(200).json(result.rows[0].now);
 });
 
-app.post('/api/auth/signup', async (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
-    if (!username|| !password) {
-        res.status(400).json({Error: "Username or password is empty."})
-    } else if (username.length > 15) {
-        res.status(400).json({Error: "Username must be 15 characters or less."})
+app.post("/api/auth/signup", async (req, res) => {
+  const username = req.body.username;
+  const password = req.body.password;
+  if (!username || !password) {
+    res.status(400).json({ Error: "Username or password is empty." });
+  } else if (username.length > 15) {
+    res.status(400).json({ Error: "Username must be 15 characters or less." });
+  } else {
+    const result = await pool.query(
+      "SELECT username FROM users WHERE username = $1",
+      [username],
+    );
+    if (result.rows.length === 1) {
+      res.status(409).json({ Error: "Username already taken." });
     } else {
-        const result = await pool.query("SELECT username FROM users WHERE username = $1", [username]);
-        if(result.rows.length === 1) {
-            res.status(409).json({ Error: "Username already taken." })
-        } else {
-            const passwordHash = await bcrypt.hash(password, 10);
-            const insertResult = await pool.query("INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username", [username, passwordHash]);
-            await createSession(insertResult.rows[0].id, res);
-            res.status(201).json(insertResult.rows[0]);
-        }   
+      const passwordHash = await bcrypt.hash(password, 10);
+      const insertResult = await pool.query(
+        "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username",
+        [username, passwordHash],
+      );
+      await createSession(insertResult.rows[0].id, res);
+      res.status(201).json(insertResult.rows[0]);
     }
+  }
 });
 
-app.post('/api/auth/login', async (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
-    if (!username || !password) {
-        res.status(400).json({ Error: "Username or password is empty"});
+app.post("/api/auth/login", async (req, res) => {
+  const username = req.body.username;
+  const password = req.body.password;
+  if (!username || !password) {
+    res.status(400).json({ Error: "Username or password is empty" });
+  } else {
+    const userResult = await pool.query(
+      "SELECT id, username, password_hash FROM users WHERE username = $1",
+      [username],
+    );
+    if (userResult.rows.length === 0) {
+      res.status(401).json({ Error: "Username or password is incorrect." });
     } else {
-        const userResult = await pool.query("SELECT id, username, password_hash FROM users WHERE username = $1", [username]);
-        if (userResult.rows.length === 0) {
-            res.status(401).json({Error: "Username or password is incorrect."});
-        } else {
-            const passwordMatch = await bcrypt.compare(password,userResult.rows[0].password_hash);
-            if (!passwordMatch) {
-                 res.status(401).json({Error: "Username or password is incorrect."});
-            } else {
-                await createSession(userResult.rows[0].id, res);
-                res.status(200).json({id: userResult.rows[0].id, username: username});
-            }
-        }
+      const passwordMatch = await bcrypt.compare(
+        password,
+        userResult.rows[0].password_hash,
+      );
+      if (!passwordMatch) {
+        res.status(401).json({ Error: "Username or password is incorrect." });
+      } else {
+        await createSession(userResult.rows[0].id, res);
+        res.status(200).json({ id: userResult.rows[0].id, username: username });
+      }
     }
+  }
 });
 
-app.post('/api/auth/logout', async (req, res) => {
-    const token = req.cookies.session;
-    if(token) {
-        await pool.query("DELETE FROM sessions WHERE token = $1", [token]);
-    }
-    res.clearCookie("session");
-    res.clearCookie("apiKey");
-    res.sendStatus(204);
+app.post("/api/auth/logout", async (req, res) => {
+  const token = req.cookies.session;
+  if (token) {
+    await pool.query("DELETE FROM sessions WHERE token = $1", [token]);
+  }
+  res.clearCookie("session");
+  res.clearCookie("apiKey");
+  res.sendStatus(204);
 });
 
-app.get('/api/auth/me', requireAuth, (req, res) => {
-    res.status(200).json({ userId: res.locals.userId})
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  res.status(200).json({ userId: res.locals.userId });
 });
 
-app.post('/api/api-key', requireAuth, async (req, res) => {
-    const apiKey = req.body.apiKey;
-    if(!apiKey) {
-        res.status(400).json({ Error: "Anthropic key required."});
-        return;
-    }
-    const client = new Anthropic({ apiKey: apiKey });
-    try {
-        await client.models.list();
-    } catch {
-        res.status(400).json({ Error: "That key didn't work. Check that you copied the whole key from your Anthropic console."});
-        return;
-    }
-    res.cookie("apiKey", apiKey, { expires: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), httpOnly: true});
-    res.status(200).json({ connected: true});
+app.post("/api/api-key", requireAuth, async (req, res) => {
+  const apiKey = req.body.apiKey;
+  if (!apiKey) {
+    res.status(400).json({ Error: "Anthropic key required." });
+    return;
+  }
+  const client = new Anthropic({ apiKey: apiKey });
+  try {
+    await client.models.list();
+  } catch {
+    res.status(400).json({
+      Error:
+        "That key didn't work. Check that you copied the whole key from your Anthropic console.",
+    });
+    return;
+  }
+  res.cookie("apiKey", apiKey, {
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+  });
+  res.cookie("apiKeyOwner", String(res.locals.userId), {
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    signed: true,
+  });
+  res.status(200).json({ connected: true });
 });
 
-app.get('/api/api-key', requireAuth, (req, res) => {
-    if (!req.cookies.apiKey) {
-        res.status(200).json({ connected: false});
-        return;
-    }
-    res.status(200).json({ connected: true});
+app.get("/api/api-key", requireAuth, (req, res) => {
+  if (!req.cookies.apiKey) {
+    res.status(200).json({ connected: false });
+    return;
+  }
+  res.status(200).json({ connected: true });
 });
 
-app.delete('/api/api-key', requireAuth, (req, res) => {
-    res.clearCookie("apiKey");
-    res.sendStatus(204);
+app.delete("/api/api-key", requireAuth, (req, res) => {
+  res.clearCookie("apiKey");
+  res.sendStatus(204);
 });
 
 app.listen(3000, () => {
-    console.log("server is listening on port 3000...")
+  console.log("server is listening on port 3000...");
 });
-
