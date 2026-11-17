@@ -1,6 +1,11 @@
+import { stringify } from "node:querystring";
 import { askClaude } from "./askClaude.js";
 import { fillPrompt } from "./prompts/fillPrompt.js";
-import { VALIDATE_EXERCISE, SILENT_SOLVE } from "./prompts/intake.js";
+import {
+  VALIDATE_EXERCISE,
+  SILENT_SOLVE,
+  GENERATE_TEST_CASES,
+} from "./prompts/intake.js";
 
 type ExerciseInput = {
   language: string;
@@ -9,6 +14,13 @@ type ExerciseInput = {
     question: string;
     answer: string;
   };
+};
+
+type SolveResult = {
+  function_signature: string;
+  solution_code: string;
+  approach_notes: string;
+  assumptions: string;
 };
 
 const formatClarification = (input: ExerciseInput) => {
@@ -51,6 +63,21 @@ export const solveExercise = async (
     clarificationContext: formatClarification(exercise),
     fixContext: fixContext,
     signatureInstruction: signatureInstruction,
+  });
+  const result = await askClaude(apiKey, prompt);
+  return result;
+};
+
+export const writeTestCases = async (
+  apiKey: string,
+  exercise: ExerciseInput,
+  solution: SolveResult,
+) => {
+  const prompt = fillPrompt(GENERATE_TEST_CASES, {
+    language: exercise.language,
+    exerciseText: exercise.exerciseText,
+    functionSignature: solution.function_signature,
+    solutionCode: solution.solution_code,
   });
   const result = await askClaude(apiKey, prompt);
   return result;
