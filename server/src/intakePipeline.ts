@@ -1,6 +1,6 @@
 import { askClaude } from "./askClaude.js";
 import { fillPrompt } from "./prompts/fillPrompt.js";
-import { VALIDATE_EXERCISE } from "./prompts/intake.js";
+import { VALIDATE_EXERCISE, SILENT_SOLVE } from "./prompts/intake.js";
 
 type ExerciseInput = {
   language: string;
@@ -31,6 +31,26 @@ export const checkExercise = async (
     language: exercise.language,
     exerciseText: exercise.exerciseText,
     clarificationContext: formatClarification(exercise),
+  });
+  const result = await askClaude(apiKey, prompt);
+  return result;
+};
+
+export const solveExercise = async (
+  apiKey: string,
+  exercise: ExerciseInput,
+  signatureGiven: boolean,
+  fixContext: string,
+) => {
+  const signatureInstruction = signatureGiven
+    ? `Use exactly the function name and parameters given in the exercise.`
+    : `Choose a clear, conventional function name and parameters.`;
+  const prompt = fillPrompt(SILENT_SOLVE, {
+    language: exercise.language,
+    exerciseText: exercise.exerciseText,
+    clarificationContext: formatClarification(exercise),
+    fixContext: fixContext,
+    signatureInstruction: signatureInstruction,
   });
   const result = await askClaude(apiKey, prompt);
   return result;
