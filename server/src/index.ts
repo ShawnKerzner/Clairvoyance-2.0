@@ -7,6 +7,7 @@ import { requireAuth } from "./auth.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { getOwnedApiKey } from "./apiKey.js";
 import { get } from "node:http";
+import { checkExercise } from "./intakePipeline.js";
 
 const app = express();
 app.use(express.json());
@@ -131,27 +132,54 @@ app.delete("/api/api-key", requireAuth, (req, res) => {
   res.sendStatus(204);
 });
 
-app.post("/api/exercises", requireAuth, (req, res) => {
+app.post("/api/exercises", requireAuth, async (req, res) => {
   const language = req.body.language;
   const exerciseText = req.body.exerciseText;
   const apiKey = getOwnedApiKey(req, res);
+  const clarification = req.body.clarification;
+
   if (
     !language ||
     !exerciseText ||
     (language !== "python" && language !== "javascript")
   ) {
-    res
-      .status(400)
-      .json({
-        Error: "Please choose Javascript or Python and paste an exercise",
-      });
+    res.status(400).json({
+      Error: "Please choose Javascript or Python and paste an exercise",
+    });
     return;
   }
+
   if (!apiKey) {
     res.status(403).json({ Error: "Please connect your API key" });
     return;
   }
-  res.status(200).json({ message: "checks passed" });
+
+  try {
+    const result = await checkExercise(apiKey, {
+      language: language,
+      exerciseText: exerciseText,
+      clarification: clarification,
+    });
+
+    if (result.status === "INVALID") {
+      res.status(400).json({ Error: result.explanation });
+      return;
+    }
+
+    if (result.status === "UNCLEAR") {
+      res.status(200).json({
+        needsClarification: true,
+        question: result.clarifying_question,
+      });
+      return;
+    }
+
+    res.status(200).json({ message: "clear" });
+  } catch {
+    res.status(502).json({
+      Error: "The AI couldn't process this right now. Please try again.",
+    });
+  }
 });
 
 app.listen(3000, () => {
