@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { requireAuth } from "./auth.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { getOwnedApiKey } from "./apiKey.js";
+import { get } from "node:http";
 
 const app = express();
 app.use(express.json());
@@ -128,6 +129,29 @@ app.get("/api/api-key", requireAuth, (req, res) => {
 app.delete("/api/api-key", requireAuth, (req, res) => {
   res.clearCookie("apiKey");
   res.sendStatus(204);
+});
+
+app.post("/api/exercises", requireAuth, (req, res) => {
+  const language = req.body.language;
+  const exerciseText = req.body.exerciseText;
+  const apiKey = getOwnedApiKey(req, res);
+  if (
+    !language ||
+    !exerciseText ||
+    (language !== "python" && language !== "javascript")
+  ) {
+    res
+      .status(400)
+      .json({
+        Error: "Please choose Javascript or Python and paste an exercise",
+      });
+    return;
+  }
+  if (!apiKey) {
+    res.status(403).json({ Error: "Please connect your API key" });
+    return;
+  }
+  res.status(200).json({ message: "checks passed" });
 });
 
 app.listen(3000, () => {
