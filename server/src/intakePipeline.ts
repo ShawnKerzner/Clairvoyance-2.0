@@ -5,6 +5,7 @@ import {
   VALIDATE_EXERCISE,
   SILENT_SOLVE,
   GENERATE_TEST_CASES,
+  SELF_CHECK,
 } from "./prompts/intake.js";
 
 type ExerciseInput = {
@@ -21,6 +22,18 @@ type SolveResult = {
   solution_code: string;
   approach_notes: string;
   assumptions: string;
+};
+
+type TestCase = {
+  call: string;
+  expected_output: string;
+  is_edge_case: boolean;
+  required_by_exercise: boolean;
+  edge_case_note: string;
+};
+
+type TestCaseResults = {
+  test_cases: TestCase[];
 };
 
 const formatClarification = (input: ExerciseInput) => {
@@ -78,6 +91,23 @@ export const writeTestCases = async (
     exerciseText: exercise.exerciseText,
     functionSignature: solution.function_signature,
     solutionCode: solution.solution_code,
+  });
+  const result = await askClaude(apiKey, prompt);
+  return result;
+};
+
+export const checkSolution = async (
+  apiKey: string,
+  exercise: ExerciseInput,
+  solution: SolveResult,
+  tests: TestCaseResults,
+) => {
+  const prompt = fillPrompt(SELF_CHECK, {
+    language: exercise.language,
+    exerciseText: exercise.exerciseText,
+    functionSignature: solution.function_signature,
+    solutionCode: solution.solution_code,
+    testCases: JSON.stringify(tests.test_cases),
   });
   const result = await askClaude(apiKey, prompt);
   return result;
