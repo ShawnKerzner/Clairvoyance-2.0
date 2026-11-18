@@ -4,11 +4,14 @@ import { showError } from "../app.ts";
 import { postJson } from "../api.ts";
 import { renderUnderstanding } from "./understanding.ts";
 import { showScreen } from "../app.ts";
+import { renderLogin } from "./login.ts";
+import { renderApiKey } from "./apiKey.ts";
 
 export const renderExerciseIntake = () => {
   app.innerHTML = `
     <h1>Copy and paste your exercise into the box below</h1>
     <p id="exercise-intake-error"></p>
+        <p id="exercise-intake-loading" hidden>Preparing your exercise… Claude is reading it and getting everything ready. This can take up to a minute.</p>
 
     <section id="exercise-section">
       <form id="intake-form">
@@ -70,9 +73,37 @@ const showClarification = (question: string) => {
   setExerciseLocked(true);
 };
 
+const setLoading = (loading: boolean) => {
+  findElement<HTMLElement>("#exercise-intake-loading").hidden = !loading;
+  document
+    .querySelectorAll<HTMLButtonElement>("#app button")
+    .forEach((button) => {
+      button.disabled = loading;
+    });
+};
+
 const submitExercise = async (body: object) => {
+  showError("#exercise-intake-error", "");
+  setLoading(true);
+
   try {
     const response = await postJson("/api/exercises", body);
+
+    if (response.status === 401) {
+      showScreen(renderLogin);
+      showError("#login-error", "Your session expired. Please log in again.");
+      return;
+    }
+
+    if (response.status === 403) {
+      showScreen(renderApiKey);
+      showError(
+        "#api-error",
+        "Please connect your API key to start an exercise.",
+      );
+      return;
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
@@ -91,6 +122,10 @@ const submitExercise = async (body: object) => {
       "#exercise-intake-error",
       "Can't reach the server, please try again",
     );
+  } finally {
+    if (document.querySelector("#exercise-intake-loading")) {
+      setLoading(false);
+    }
   }
 };
 
