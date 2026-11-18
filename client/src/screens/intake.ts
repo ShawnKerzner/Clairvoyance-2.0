@@ -1,7 +1,9 @@
 import { app, findElement } from "../app.ts";
-import { logOut, showNextScreen } from "../navigation.ts";
+import { logOut } from "../navigation.ts";
 import { showError } from "../app.ts";
 import { postJson } from "../api.ts";
+import { renderUnderstanding } from "./understanding.ts";
+import { showScreen } from "../app.ts";
 
 export const renderExerciseIntake = () => {
   app.innerHTML = `
@@ -35,6 +37,7 @@ export const renderExerciseIntake = () => {
     <a href="#" id="logout-link">Logout</a>
     `;
   setupIntakeForm();
+  setupClarificationForm();
   setupEditExercise();
   logOut("#exercise-intake-error");
 };
@@ -67,35 +70,61 @@ const showClarification = (question: string) => {
   setExerciseLocked(true);
 };
 
-const setupIntakeForm = () => {
-  const intakeForm = findElement("#intake-form");
-  intakeForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const result = readIntakeForm();
-    try {
-      const response = await postJson("/api/exercises", result);
-      const data = await response.json();
+const submitExercise = async (body: object) => {
+  try {
+    const response = await postJson("/api/exercises", body);
+    const data = await response.json();
 
-      if (!response.ok) {
-        showError("#exercise-intake-error", data.Error);
-        return;
-      }
-
-      if (data.needsClarification) {
-        showClarification(data.question);
-        return;
-      }
-
-      showNextScreen();
-    } catch (error) {
-      showError(
-        "#exercise-intake-error",
-        "Can't reach the server, please try again",
-      );
+    if (!response.ok) {
+      showError("#exercise-intake-error", data.Error);
+      return;
     }
+
+    if (data.needsClarification) {
+      showClarification(data.question);
+      return;
+    }
+
+    showScreen(() => renderUnderstanding(data.id, data.assumptions));
+  } catch (error) {
+    showError(
+      "#exercise-intake-error",
+      "Can't reach the server, please try again",
+    );
+  }
+};
+
+const setupIntakeForm = () => {
+  findElement("#intake-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await submitExercise(readIntakeForm());
   });
 };
 
+const setupClarificationForm = () => {
+  findElement("#clarification-form").addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
+      const answer = findElement<HTMLTextAreaElement>(
+        "#clarification-answer",
+      ).value;
+
+      if (!answer.trim()) {
+        showError(
+          "#exercise-intake-error",
+          "Please answer the question to continue.",
+        );
+        return;
+      }
+
+      await submitExercise({
+        ...readIntakeForm(),
+        clarification: { question: pendingQuestion, answer },
+      });
+    },
+  );
+};
 const setupEditExercise = () => {
   findElement("#edit-exercise-btn").addEventListener("click", () => {
     pendingQuestion = "";
