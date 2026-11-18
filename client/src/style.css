@@ -1,0 +1,12 @@
+#intake-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 600px;
+}
+
+#intake-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+}
