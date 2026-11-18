@@ -7,7 +7,7 @@ import { requireAuth } from "./auth.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { getOwnedApiKey } from "./apiKey.js";
 import { get } from "node:http";
-import { checkExercise } from "./intakePipeline.js";
+import { buildReferenceSolution, checkExercise } from "./intakePipeline.js";
 
 const app = express();
 app.use(express.json());
@@ -137,6 +137,11 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
   const exerciseText = req.body.exerciseText;
   const apiKey = getOwnedApiKey(req, res);
   const clarification = req.body.clarification;
+  const exercise = {
+    language: language,
+    exerciseText: exerciseText,
+    clarification: clarification,
+  };
 
   if (
     !language ||
@@ -155,11 +160,7 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
   }
 
   try {
-    const result = await checkExercise(apiKey, {
-      language: language,
-      exerciseText: exerciseText,
-      clarification: clarification,
-    });
+    const result = await checkExercise(apiKey, exercise);
 
     if (result.status === "INVALID") {
       res.status(400).json({ Error: result.explanation });
@@ -174,7 +175,40 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
       return;
     }
 
-    res.status(200).json({ message: "clear" });
+    const referenceSolution = await buildReferenceSolution(
+      apiKey,
+      exercise,
+      result.signature_given,
+    );
+    const insertResult = await pool.query(
+      `INSERT INTO exercises
+         (user_id, language, exercise_text, clarification,
+          function_signature, solution_code, approach_notes, assumptions,
+          test_cases, self_check_passed, self_check_notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id, current_stage`,
+      [
+        res.locals.userId,
+        language,
+        exerciseText,
+        clarification ? JSON.stringify(clarification) : null,
+        referenceSolution.solution.function_signature,
+        referenceSolution.solution.solution_code,
+        referenceSolution.solution.approach_notes,
+        referenceSolution.solution.assumptions,
+        JSON.stringify(referenceSolution.testCases),
+        referenceSolution.selfCheckPassed,
+        referenceSolution.selfCheckNotes,
+      ],
+    );
+
+    const savedExercise = insertResult.rows[0];
+
+    res.status(201).json({
+      id: savedExercise.id,
+      currentStage: savedExercise.current_stage,
+      assumptions: referenceSolution.solution.assumptions,
+    });
   } catch {
     res.status(502).json({
       Error: "The AI couldn't process this right now. Please try again.",
