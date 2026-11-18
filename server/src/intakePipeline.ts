@@ -112,3 +112,54 @@ export const checkSolution = async (
   const result = await askClaude(apiKey, prompt);
   return result;
 };
+
+export const buildReferenceSolution = async (
+  apiKey: string,
+  exercise: ExerciseInput,
+  signatureGiven: boolean,
+) => {
+  let solvedExercise = await solveExercise(
+    apiKey,
+    exercise,
+    signatureGiven,
+    "",
+  );
+  const testCases = await writeTestCases(apiKey, exercise, solvedExercise);
+  let checkedSolution = await checkSolution(
+    apiKey,
+    exercise,
+    solvedExercise,
+    testCases,
+  );
+  let attemptsToSolve = 0;
+  while (checkedSolution.overall_status === "FAIL" && attemptsToSolve < 2) {
+    const fixContext = `Your previous solution failed its self-check. Fix the problems below.
+
+<previous_solution>
+${solvedExercise.solution_code}
+</previous_solution>
+
+<problems_found>
+${checkedSolution.reasoning}
+</problems_found>`;
+    solvedExercise = await solveExercise(
+      apiKey,
+      exercise,
+      signatureGiven,
+      fixContext,
+    );
+    checkedSolution = await checkSolution(
+      apiKey,
+      exercise,
+      solvedExercise,
+      testCases,
+    );
+    attemptsToSolve += 1;
+  }
+  return {
+    solution: solvedExercise,
+    testCases: testCases,
+    selfCheckPassed: checkedSolution.overall_status === "PASS",
+    selfCheckNotes: checkedSolution.reasoning,
+  };
+};
