@@ -3,6 +3,7 @@ import { renderLogin } from "./screens/login";
 import { renderExerciseIntake } from "./screens/intake";
 import { renderApiKey } from "./screens/apiKey";
 import { postJson } from "./api";
+import { renderUnderstanding } from "./screens/understanding";
 
 export const showNextScreen = async () => {
   try {
@@ -13,7 +14,7 @@ export const showNextScreen = async () => {
     }
     const data = await response.json();
     if (data.connected) {
-      showScreen(renderExerciseIntake);
+      await showExerciseScreen();
       return;
     }
     showScreen(renderApiKey);
@@ -33,4 +34,20 @@ export const logOut = (errorSelector: string) => {
       showError(errorSelector, "Couldn't log out");
     }
   });
+};
+
+const showExerciseScreen = async () => {
+  const response = await fetch("/api/exercises/current");
+  const data = await response.json();
+  if (data.exercise === null) {
+    showScreen(renderExerciseIntake);
+    return;
+  }
+  if (data.exercise.currentStage === "understanding") {
+    showScreen(() =>
+      renderUnderstanding(data.exercise.id, data.exercise.assumptions),
+    );
+    return;
+  }
+  showScreen(renderExerciseIntake);
 };
