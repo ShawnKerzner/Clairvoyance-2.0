@@ -390,7 +390,8 @@ app.post("/api/exercises/:id/hint", requireAuth, async (req, res) => {
     ]);
 
     res.status(200).json({ hint: result.hint });
-  } catch {
+  } catch (error) {
+    console.error(error);
     res.status(502).json({
       Error: "The AI couldn't process this right now. Please try again.",
     });

@@ -18,6 +18,7 @@ export const askClaude = async (apiKey: string, prompt: string) => {
   try {
     return JSON.parse(json);
   } catch {
+    console.error("Raw reply from Claude:", text);
     throw new Error("Claude's reply wasn't valid JSON");
   }
 };
