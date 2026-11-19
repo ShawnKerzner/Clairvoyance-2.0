@@ -207,6 +207,7 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
       id: savedExercise.id,
       currentStage: savedExercise.current_stage,
       assumptions: referenceSolution.solution.assumptions,
+      exerciseText: exerciseText,
     });
   } catch {
     res.status(502).json({
@@ -218,7 +219,7 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
 app.get("/api/exercises/current", requireAuth, async (req, res) => {
   const result = await pool.query(
     `
-    SELECT id, current_stage, assumptions
+    SELECT id, current_stage, assumptions, exercise_text
     FROM exercises
     WHERE user_id = $1 AND current_stage != 'complete'
     ORDER BY created_at DESC
@@ -234,6 +235,7 @@ app.get("/api/exercises/current", requireAuth, async (req, res) => {
       id: result.rows[0].id,
       currentStage: result.rows[0].current_stage,
       assumptions: result.rows[0].assumptions,
+      exerciseText: result.rows[0].exercise_text,
     },
   });
 });
