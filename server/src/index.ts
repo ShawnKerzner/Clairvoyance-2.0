@@ -6,7 +6,6 @@ import cookieParser from "cookie-parser";
 import { requireAuth } from "./auth.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { getOwnedApiKey } from "./apiKey.js";
-import { get } from "node:http";
 import { buildReferenceSolution, checkExercise } from "./intakePipeline.js";
 
 const app = express();
@@ -214,6 +213,29 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
       Error: "The AI couldn't process this right now. Please try again.",
     });
   }
+});
+
+app.get("/api/exercises/current", requireAuth, async (req, res) => {
+  const result = await pool.query(
+    `
+    SELECT id, current_stage, assumptions
+    FROM exercises
+    WHERE user_id = $1 AND current_stage != 'complete'
+    ORDER BY created_at DESC
+    LIMIT 1;`,
+    [res.locals.userId],
+  );
+  if (result.rows.length === 0) {
+    res.status(200).json({ exercise: null });
+    return;
+  }
+  res.status(200).json({
+    exercise: {
+      id: result.rows[0].id,
+      currentStage: result.rows[0].current_stage,
+      assumptions: result.rows[0].assumptions,
+    },
+  });
 });
 
 app.listen(3000, () => {
