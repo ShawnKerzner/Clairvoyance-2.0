@@ -12,9 +12,11 @@
 }
 
 #intake-form,
-#clarification-form {
+#clarification-form,
+#understanding-form {
   display: flex;
   flex-direction: column;
   gap: 8px;
   max-width: 600px;
 }
+

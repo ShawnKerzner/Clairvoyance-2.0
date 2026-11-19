@@ -116,7 +116,7 @@ const submitExercise = async (body: object) => {
       return;
     }
 
-    showScreen(() => renderUnderstanding(data.id, data.assumptions));
+    showScreen(() => renderUnderstanding(data));
   } catch (error) {
     showError(
       "#exercise-intake-error",

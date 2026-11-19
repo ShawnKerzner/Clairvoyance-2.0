@@ -44,9 +44,7 @@ const showExerciseScreen = async () => {
     return;
   }
   if (data.exercise.currentStage === "understanding") {
-    showScreen(() =>
-      renderUnderstanding(data.exercise.id, data.exercise.assumptions),
-    );
+    showScreen(() => renderUnderstanding(data.exercise));
     return;
   }
   showScreen(renderExerciseIntake);
