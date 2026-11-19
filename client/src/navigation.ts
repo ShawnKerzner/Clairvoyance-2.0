@@ -4,6 +4,7 @@ import { renderExerciseIntake } from "./screens/intake";
 import { renderApiKey } from "./screens/apiKey";
 import { postJson } from "./api";
 import { renderUnderstanding } from "./screens/understanding";
+import { renderLogic } from "./screens/logic";
 
 export const showNextScreen = async () => {
   try {
@@ -45,6 +46,10 @@ const showExerciseScreen = async () => {
   }
   if (data.exercise.currentStage === "understanding") {
     showScreen(() => renderUnderstanding(data.exercise));
+    return;
+  }
+  if (data.exercise.currentStage === "logic") {
+    showScreen(() => renderLogic(data.exercise));
     return;
   }
   showScreen(renderExerciseIntake);

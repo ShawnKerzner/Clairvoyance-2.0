@@ -22,3 +22,17 @@ export const askClaude = async (apiKey: string, prompt: string) => {
     throw new Error("Claude's reply wasn't valid JSON");
   }
 };
+
+export const askClaudeText = async (apiKey: string, prompt: string) => {
+  const client = new Anthropic({ apiKey: apiKey });
+  const reply = await client.messages.create({
+    model: "claude-sonnet-5-5",
+    max_tokens: 1000,
+    messages: [{ role: "user", content: prompt }],
+  });
+  const textBlock = reply.content.find((block) => block.type === "text");
+  if (!textBlock) {
+    throw new Error("Claude's reply had no text");
+  }
+  return textBlock.text.trim();
+};

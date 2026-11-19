@@ -389,7 +389,7 @@ app.post("/api/exercises/:id/hint", requireAuth, async (req, res) => {
       exerciseId,
     ]);
 
-    res.status(200).json({ hint: result.hint });
+    res.status(200).json({ hint: result });
   } catch (error) {
     console.error(error);
     res.status(502).json({

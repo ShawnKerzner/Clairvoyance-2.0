@@ -40,5 +40,4 @@ Rules:
 - Never give the answer, the reference approach, or code they could paste straight in.
 - 1-3 sentences.
 
-Respond with JSON only:
-{ "hint": "..." }`;
+Respond with ONLY the hint text itself: no JSON, no quotation marks around it, no label like "Hint:".`;
