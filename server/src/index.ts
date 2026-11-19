@@ -7,6 +7,9 @@ import { requireAuth } from "./auth.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { getOwnedApiKey } from "./apiKey.js";
 import { buildReferenceSolution, checkExercise } from "./intakePipeline.js";
+import { evaluateParaphrase } from "./understandingPipeline.js";
+import { revealParaphrase } from "./understandingPipeline.js";
+import { getHint } from "./hintPipeline.js";
 
 const app = express();
 app.use(express.json());
@@ -238,6 +241,160 @@ app.get("/api/exercises/current", requireAuth, async (req, res) => {
       exerciseText: result.rows[0].exercise_text,
     },
   });
+});
+
+app.post("/api/exercises/:id/understanding", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  const paraphrase = req.body.paraphrase;
+  const apiKey = getOwnedApiKey(req, res);
+
+  if (!paraphrase || !paraphrase.trim()) {
+    res
+      .status(400)
+      .json({ Error: "Please explain the exercise in your own words." });
+    return;
+  }
+  if (!apiKey) {
+    res.status(403).json({ Error: "Please connect your API key" });
+    return;
+  }
+
+  try {
+    const exerciseResult = await pool.query(
+      `SELECT exercise_text, function_signature, progress
+       FROM exercises
+       WHERE id = $1 AND user_id = $2 AND current_stage = 'understanding'`,
+      [exerciseId, res.locals.userId],
+    );
+    if (exerciseResult.rows.length === 0) {
+      res.status(404).json({ Error: "Exercise not found at this stage." });
+      return;
+    }
+
+    const row = exerciseResult.rows[0];
+    const exercise = {
+      exerciseText: row.exercise_text,
+      functionSignature: row.function_signature,
+    };
+    const progress = row.progress;
+    const stage = progress.understanding ?? {
+      attempts: [],
+      gaps: [],
+      hintsRequested: 0,
+    };
+    const attemptNumber = stage.attempts.length + 1;
+
+    const evaluation = await evaluateParaphrase(
+      apiKey,
+      exercise,
+      paraphrase,
+      attemptNumber,
+      stage.attempts,
+    );
+    stage.attempts.push(paraphrase);
+
+    if (evaluation.status === "SOLID") {
+      stage.finalParaphrase = evaluation.cleaned_paraphrase;
+      stage.answerRevealed = false;
+      progress.understanding = stage;
+      await pool.query(
+        `UPDATE exercises SET progress = $1, current_stage = 'logic' WHERE id = $2`,
+        [JSON.stringify(progress), exerciseId],
+      );
+      res
+        .status(200)
+        .json({ status: "SOLID", paraphrase: evaluation.cleaned_paraphrase });
+      return;
+    }
+
+    stage.gaps.push(evaluation.gap);
+
+    if (attemptNumber >= 5) {
+      const reveal = await revealParaphrase(apiKey, exercise, paraphrase);
+      stage.finalParaphrase = reveal.revealed_paraphrase;
+      stage.answerRevealed = true;
+      progress.understanding = stage;
+      await pool.query(
+        `UPDATE exercises SET progress = $1, current_stage = 'logic' WHERE id = $2`,
+        [JSON.stringify(progress), exerciseId],
+      );
+      res.status(200).json({
+        status: "REVEALED",
+        paraphrase: reveal.revealed_paraphrase,
+        note: reveal.note,
+      });
+      return;
+    }
+
+    progress.understanding = stage;
+    await pool.query(`UPDATE exercises SET progress = $1 WHERE id = $2`, [
+      JSON.stringify(progress),
+      exerciseId,
+    ]);
+    res.status(200).json({
+      status: "WEAK",
+      feedback: evaluation.feedback,
+      attemptNumber: attemptNumber + 1,
+    });
+  } catch {
+    res.status(502).json({
+      Error: "The AI couldn't process this right now. Please try again.",
+    });
+  }
+});
+
+app.post("/api/exercises/:id/hint", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  const apiKey = getOwnedApiKey(req, res);
+  if (!apiKey) {
+    res.status(403).json({ Error: "Please connect your API key" });
+    return;
+  }
+
+  try {
+    const exerciseResult = await pool.query(
+      `SELECT exercise_text, language, solution_code, progress
+       FROM exercises
+       WHERE id = $1 AND user_id = $2 AND current_stage = 'understanding'`,
+      [exerciseId, res.locals.userId],
+    );
+    if (exerciseResult.rows.length === 0) {
+      res.status(404).json({ Error: "Exercise not found at this stage." });
+      return;
+    }
+
+    const row = exerciseResult.rows[0];
+    const progress = row.progress;
+    const stage = progress.understanding ?? {
+      attempts: [],
+      gaps: [],
+      hintsRequested: 0,
+    };
+    stage.hintsRequested += 1;
+
+    const result = await getHint(apiKey, {
+      stage: "understanding",
+      hintNumber: String(stage.hintsRequested),
+      exerciseText: row.exercise_text,
+      language: row.language,
+      solutionCode: row.solution_code,
+      stageContext:
+        "The student is explaining in their own words what the exercise asks.",
+      attemptsSoFar: stage.attempts.join("\n"),
+    });
+
+    progress.understanding = stage;
+    await pool.query(`UPDATE exercises SET progress = $1 WHERE id = $2`, [
+      JSON.stringify(progress),
+      exerciseId,
+    ]);
+
+    res.status(200).json({ hint: result.hint });
+  } catch {
+    res.status(502).json({
+      Error: "The AI couldn't process this right now. Please try again.",
+    });
+  }
 });
 
 app.listen(3000, () => {
