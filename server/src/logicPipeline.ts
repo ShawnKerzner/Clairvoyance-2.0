@@ -1,10 +1,11 @@
 import { fillPrompt } from "./prompts/fillPrompt.js";
-import { EVALUATE_LOGIC_STEP } from "./prompts/logic.js";
-import { askClaude } from "./askClaude.js";
 import {
+  EVALUATE_LOGIC_STEP,
   EVALUATE_EDGE_CASE_ANSWER,
   COMPLETENESS_CHECK,
+  REVEAL_LOGIC_STEP,
 } from "./prompts/logic.js";
+import { askClaude } from "./askClaude.js";
 
 export type LogicExercise = {
   exerciseText: string;
@@ -105,6 +106,22 @@ export const checkPlanComplete = async (
     solutionCode: exercise.solutionCode,
     requiredEdgeCases: formatEdgeCases(exercise, true),
     planSteps: formatSteps(planSteps),
+  });
+  return await askClaude(apiKey, prompt);
+};
+
+export const revealLogicStep = async (
+  apiKey: string,
+  exercise: LogicExercise,
+  acceptedSteps: string[],
+  attempts: string[],
+) => {
+  const prompt = fillPrompt(REVEAL_LOGIC_STEP, {
+    language: exercise.language,
+    exerciseText: exercise.exerciseText,
+    acceptedSteps: formatSteps(acceptedSteps),
+    allAttemptsForThisStep: formatSteps(attempts),
+    solutionCode: exercise.solutionCode,
   });
   return await askClaude(apiKey, prompt);
 };
