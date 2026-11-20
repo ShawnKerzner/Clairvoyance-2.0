@@ -5,6 +5,7 @@ export const renderLogic = (exercise: {
   id: number;
   assumptions: string;
   exerciseText: string;
+  progress: Record<string, any>;
 }) => {
   app.innerHTML = `
     <h1>Logic Walkthrough</h1>

@@ -5,7 +5,12 @@ import { renderLogin } from "./login.ts";
 import { renderApiKey } from "./apiKey.ts";
 import { renderLogic } from "./logic.ts";
 
-type Exercise = { id: number; assumptions: string; exerciseText: string };
+type Exercise = {
+  id: number;
+  assumptions: string;
+  exerciseText: string;
+  progress: Record<string, any>;
+};
 
 export const renderUnderstanding = (exercise: Exercise) => {
   app.innerHTML = `
@@ -35,6 +40,9 @@ export const renderUnderstanding = (exercise: Exercise) => {
   findElement("#understanding-exercise-text").textContent =
     exercise.exerciseText;
   findElement("#understanding-assumptions").textContent = exercise.assumptions;
+  const attemptsUsed = exercise.progress.understanding?.attempts.length ?? 0;
+  findElement("#understanding-attempt").textContent =
+    `Attempt ${attemptsUsed + 1} of 5`;
   setupUnderstandingForm(exercise);
   setupHintButton(exercise);
   logOut("#understanding-error");
