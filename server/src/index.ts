@@ -11,7 +11,11 @@ import { evaluateParaphrase } from "./understandingPipeline.js";
 import { revealParaphrase } from "./understandingPipeline.js";
 import { getHint } from "./hintPipeline.js";
 import { loadExerciseAtStage, saveProgress } from "./exerciseStore.js";
-import { evaluateLogicStep, revealLogicStep } from "./logicPipeline.js";
+import {
+  evaluateLogicStep,
+  revealLogicStep,
+  evaluateEdgeCaseAnswer,
+} from "./logicPipeline.js";
 
 const app = express();
 app.use(express.json());
@@ -504,6 +508,109 @@ app.post("/api/exercises/:id/logic/step", requireAuth, async (req, res) => {
     });
   }
 });
+
+app.post(
+  "/api/exercises/:id/logic/edge-case",
+  requireAuth,
+  async (req, res) => {
+    const exerciseId = Number(req.params.id);
+    const answer = req.body.answer;
+    const skip = req.body.skip === true;
+    const apiKey = getOwnedApiKey(req, res);
+
+    if (!skip && (!answer || !answer.trim())) {
+      res
+        .status(400)
+        .json({ Error: "Please answer the question, or skip it." });
+      return;
+    }
+    if (!apiKey) {
+      res.status(403).json({ Error: "Please connect your API key" });
+      return;
+    }
+
+    try {
+      const loaded = await loadExerciseAtStage(
+        exerciseId,
+        res.locals.userId,
+        "logic",
+      );
+      if (!loaded) {
+        res.status(404).json({ Error: "Exercise not found at this stage." });
+        return;
+      }
+      const { exercise, progress } = loaded;
+      const logic = progress.logic;
+      const pending = logic?.pendingEdgeCase;
+      if (!pending) {
+        res.status(409).json({
+          Error: "There's no edge-case question to answer right now.",
+        });
+        return;
+      }
+
+      if (skip) {
+        if (pending.required) {
+          res.status(400).json({
+            Error:
+              "This case is required by the exercise, so it can't be skipped.",
+          });
+          return;
+        }
+        logic.edgeCases.push({ note: pending.note, outcome: "skipped" });
+        logic.pendingEdgeCase = null;
+        await saveProgress(exerciseId, progress);
+        res.status(200).json({ status: "SKIPPED" });
+        return;
+      }
+
+      const attemptNumber = pending.attempts.length + 1;
+      const evaluation = await evaluateEdgeCaseAnswer(
+        apiKey,
+        exercise,
+        logic.steps,
+        pending,
+        answer,
+        attemptNumber,
+      );
+      pending.attempts.push(answer);
+
+      if (evaluation.status === "SOLID") {
+        logic.steps.push(evaluation.planned_step);
+        logic.edgeCases.push({ note: pending.note, outcome: "answered" });
+        logic.pendingEdgeCase = null;
+        await saveProgress(exerciseId, progress);
+        res
+          .status(200)
+          .json({ status: "SOLID", step: evaluation.planned_step });
+        return;
+      }
+
+      if (attemptNumber >= 5) {
+        logic.edgeCases.push({ note: pending.note, outcome: "unresolved" });
+        logic.pendingEdgeCase = null;
+        await saveProgress(exerciseId, progress);
+        res.status(200).json({
+          status: "CLOSED",
+          note: "Let's move on for now. We'll look at this case again in your final review.",
+        });
+        return;
+      }
+
+      await saveProgress(exerciseId, progress);
+      res.status(200).json({
+        status: "WEAK",
+        feedback: evaluation.feedback,
+        attemptNumber: attemptNumber + 1,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(502).json({
+        Error: "The AI couldn't process this right now. Please try again.",
+      });
+    }
+  },
+);
 
 app.listen(3000, () => {
   console.log("server is listening on port 3000...");
