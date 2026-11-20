@@ -10,6 +10,8 @@ import { buildReferenceSolution, checkExercise } from "./intakePipeline.js";
 import { evaluateParaphrase } from "./understandingPipeline.js";
 import { revealParaphrase } from "./understandingPipeline.js";
 import { getHint } from "./hintPipeline.js";
+import { loadExerciseAtStage, saveProgress } from "./exerciseStore.js";
+import { evaluateLogicStep, revealLogicStep } from "./logicPipeline.js";
 
 const app = express();
 app.use(express.json());
@@ -392,6 +394,109 @@ app.post("/api/exercises/:id/hint", requireAuth, async (req, res) => {
     ]);
 
     res.status(200).json({ hint: result });
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({
+      Error: "The AI couldn't process this right now. Please try again.",
+    });
+  }
+});
+
+app.post("/api/exercises/:id/logic/step", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  const stepText = req.body.stepText;
+  const apiKey = getOwnedApiKey(req, res);
+
+  if (!stepText || !stepText.trim()) {
+    res.status(400).json({ Error: "Please describe your next step." });
+    return;
+  }
+  if (!apiKey) {
+    res.status(403).json({ Error: "Please connect your API key" });
+    return;
+  }
+
+  try {
+    const loaded = await loadExerciseAtStage(
+      exerciseId,
+      res.locals.userId,
+      "logic",
+    );
+    if (!loaded) {
+      res.status(404).json({ Error: "Exercise not found at this stage." });
+      return;
+    }
+    const { exercise, progress } = loaded;
+    const logic = progress.logic ?? {
+      steps: [],
+      current: { attempts: [], gaps: [], hintsRequested: 0 },
+      pendingEdgeCase: null,
+      edgeCases: [],
+      revealedSteps: 0,
+    };
+
+    if (logic.pendingEdgeCase) {
+      res
+        .status(409)
+        .json({ Error: "Please answer the edge-case question first." });
+      return;
+    }
+
+    const attemptNumber = logic.current.attempts.length + 1;
+    const evaluation = await evaluateLogicStep(
+      apiKey,
+      exercise,
+      logic.steps,
+      stepText,
+      attemptNumber,
+    );
+    logic.current.attempts.push(stepText);
+
+    if (evaluation.status === "SOLID") {
+      logic.steps.push(evaluation.cleaned_step);
+      logic.current = { attempts: [], gaps: [], hintsRequested: 0 };
+      logic.pendingEdgeCase = evaluation.edge_case
+        ? { ...evaluation.edge_case, attempts: [] }
+        : null;
+      progress.logic = logic;
+      await saveProgress(exerciseId, progress);
+      res.status(200).json({
+        status: "SOLID",
+        step: evaluation.cleaned_step,
+        edgeCase: logic.pendingEdgeCase,
+      });
+      return;
+    }
+
+    logic.current.gaps.push(evaluation.gap);
+
+    if (attemptNumber >= 5) {
+      const reveal = await revealLogicStep(
+        apiKey,
+        exercise,
+        logic.steps,
+        logic.current.attempts,
+      );
+      logic.steps.push(reveal.revealed_step);
+      logic.revealedSteps += 1;
+      logic.current = { attempts: [], gaps: [], hintsRequested: 0 };
+      progress.logic = logic;
+      await saveProgress(exerciseId, progress);
+      res.status(200).json({
+        status: "REVEALED",
+        step: reveal.revealed_step,
+        note: reveal.note,
+      });
+      return;
+    }
+
+    progress.logic = logic;
+    await saveProgress(exerciseId, progress);
+    res.status(200).json({
+      status: "WEAK",
+      feedback: evaluation.feedback,
+      attemptNumber: attemptNumber + 1,
+    });
   } catch (error) {
     console.error(error);
     res.status(502).json({
