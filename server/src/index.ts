@@ -9,7 +9,7 @@ import { getOwnedApiKey } from "./apiKey.js";
 import { buildReferenceSolution, checkExercise } from "./intakePipeline.js";
 import { evaluateParaphrase } from "./understandingPipeline.js";
 import { revealParaphrase } from "./understandingPipeline.js";
-import { getHint } from "./hintPipeline.js";
+import { getHint, hintContextForStage } from "./hintPipeline.js";
 import { loadExerciseAtStage, saveProgress } from "./exerciseStore.js";
 import {
   evaluateLogicStep,
@@ -362,43 +362,38 @@ app.post("/api/exercises/:id/hint", requireAuth, async (req, res) => {
 
   try {
     const exerciseResult = await pool.query(
-      `SELECT exercise_text, language, solution_code, progress
+      `SELECT exercise_text, language, solution_code, progress, current_stage
        FROM exercises
-       WHERE id = $1 AND user_id = $2 AND current_stage = 'understanding'`,
+       WHERE id = $1 AND user_id = $2`,
       [exerciseId, res.locals.userId],
     );
     if (exerciseResult.rows.length === 0) {
-      res.status(404).json({ Error: "Exercise not found at this stage." });
+      res.status(404).json({ Error: "Exercise not found." });
       return;
     }
 
     const row = exerciseResult.rows[0];
     const progress = row.progress;
-    const stage = progress.understanding ?? {
-      attempts: [],
-      gaps: [],
-      hintsRequested: 0,
-    };
-    stage.hintsRequested += 1;
+    const context = hintContextForStage(row.current_stage, progress);
+    if (!context) {
+      res.status(409).json({ Error: "Hints aren't available at this stage." });
+      return;
+    }
 
-    const result = await getHint(apiKey, {
-      stage: "understanding",
-      hintNumber: String(stage.hintsRequested),
+    context.record.hintsRequested += 1;
+
+    const hint = await getHint(apiKey, {
+      stage: context.promptStage,
+      hintNumber: String(context.record.hintsRequested),
       exerciseText: row.exercise_text,
       language: row.language,
       solutionCode: row.solution_code,
-      stageContext:
-        "The student is explaining in their own words what the exercise asks.",
-      attemptsSoFar: stage.attempts.join("\n"),
+      stageContext: context.stageContext,
+      attemptsSoFar: context.attempts.join("\n"),
     });
 
-    progress.understanding = stage;
-    await pool.query(`UPDATE exercises SET progress = $1 WHERE id = $2`, [
-      JSON.stringify(progress),
-      exerciseId,
-    ]);
-
-    res.status(200).json({ hint: result });
+    await saveProgress(exerciseId, progress);
+    res.status(200).json({ hint });
   } catch (error) {
     console.error(error);
     res.status(502).json({
