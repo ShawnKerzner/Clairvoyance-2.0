@@ -1,3 +1,8 @@
+import { fillPrompt } from "./prompts/fillPrompt.js";
+import { GENERATE_FINAL_REVEAL } from "./prompts/reveal.js";
+import { askClaude } from "./askClaude.js";
+import type { LogicExercise } from "./logicPipeline.js";
+
 type StepRecord = {
   attempts: string[];
   gaps: string[];
@@ -44,4 +49,21 @@ export const summarizeJourney = (progress: Record<string, any>) => {
   }
 
   return lines.join("\n");
+};
+
+export const generateFinalReveal = async (
+  apiKey: string,
+  exercise: LogicExercise & { approachNotes: string },
+  studentCode: string,
+  progress: Record<string, any>,
+) => {
+  const prompt = fillPrompt(GENERATE_FINAL_REVEAL, {
+    language: exercise.language,
+    exerciseText: exercise.exerciseText,
+    studentCode: studentCode,
+    solutionCode: exercise.solutionCode,
+    approachNotes: exercise.approachNotes,
+    journeySummary: summarizeJourney(progress),
+  });
+  return await askClaude(apiKey, prompt);
 };
