@@ -28,7 +28,7 @@ export type EdgeCaseQuestion = {
   note: string;
 };
 
-const formatSteps = (steps: string[]) => {
+export const formatSteps = (steps: string[]) => {
   if (steps.length === 0) {
     return "(no steps yet)";
   }
