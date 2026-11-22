@@ -821,6 +821,26 @@ app.post("/api/exercises/:id/reveal", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/api/exercises/:id/finish", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  try {
+    const result = await pool.query(
+      `UPDATE exercises SET current_stage = 'complete'
+       WHERE id = $1 AND user_id = $2 AND current_stage = 'reveal'
+       RETURNING id`,
+      [exerciseId, res.locals.userId],
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ Error: "Exercise not found at this stage." });
+      return;
+    }
+    res.status(200).json({ status: "COMPLETE" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ Error: "Something went wrong. Please try again." });
+  }
+});
+
 app.listen(3000, () => {
   console.log("server is listening on port 3000...");
 });
