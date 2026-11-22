@@ -1,5 +1,7 @@
 import { app, findElement } from "../app.ts";
 import { logOut } from "../navigation.ts";
+import { postJson } from "../api.ts";
+import { showMessage } from "../screenHelpers.ts";
 
 type Exercise = {
   id: number;
@@ -42,6 +44,7 @@ export const renderLogic = (exercise: Exercise) => {
   findElement("#logic-exercise-text").textContent = exercise.exerciseText;
   logOut("#logic-error");
   showLogicState(exercise.progress.logic);
+  setupLogicForm(exercise);
 };
 
 const showLogicState = (logic: Record<string, any> | undefined) => {
@@ -80,4 +83,36 @@ const showLogicState = (logic: Record<string, any> | undefined) => {
     findElement("#logic-attempt").textContent =
       `Attempt ${attemptsUsed + 1} of 5`;
   }
+};
+
+const refreshLogic = async () => {
+  const response = await fetch("/api/exercises/current");
+  const data = await response.json();
+  showLogicState(data.exercise?.progress.logic);
+};
+
+const setupLogicForm = (exercise: Exercise) => {
+  findElement("#logic-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = findElement<HTMLTextAreaElement>("#logic-input");
+    const response = await postJson(
+      `/api/exercises/${exercise.id}/logic/step`,
+      { stepText: input.value },
+    );
+    const data = await response.json();
+
+    if (data.status === "WEAK") {
+      showMessage("#logic-feedback", data.feedback);
+      findElement("#logic-attempt").textContent =
+        `Attempt ${data.attemptNumber} of 5`;
+      return;
+    }
+
+    input.value = "";
+    showMessage(
+      "#logic-feedback",
+      data.status === "SOLID" ? "Step added." : data.note,
+    );
+    await refreshLogic();
+  });
 };
