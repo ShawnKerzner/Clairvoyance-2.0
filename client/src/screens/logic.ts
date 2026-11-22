@@ -45,6 +45,8 @@ export const renderLogic = (exercise: Exercise) => {
   logOut("#logic-error");
   showLogicState(exercise.progress.logic);
   setupLogicForm(exercise);
+  setupSkipButton(exercise);
+  setupLogicHintButton(exercise);
 };
 
 let answeringEdgeCase = false;
@@ -130,6 +132,53 @@ const setupLogicForm = (exercise: Exercise) => {
         data.status === "SOLID" ? "Step added." : data.note,
       );
       await refreshLogic();
+    } catch {
+      showError("#logic-error", "Can't reach the server, please try again.");
+    } finally {
+      if (document.querySelector("#logic-form")) setBusy(false);
+    }
+  });
+};
+
+const setupSkipButton = (exercise: Exercise) => {
+  findElement("#logic-skip-btn").addEventListener("click", async () => {
+    setBusy(true);
+    try {
+      const response = await postJson(
+        `/api/exercises/${exercise.id}/logic/edge-case`,
+        { skip: true },
+      );
+      if (handleAuthErrors(response)) return;
+      const data = await response.json();
+      if (!response.ok) {
+        showError("#logic-error", data.Error);
+        return;
+      }
+      showMessage(
+        "#logic-feedback",
+        "Skipped. You'll see this case again in your final review.",
+      );
+      await refreshLogic();
+    } catch {
+      showError("#logic-error", "Can't reach the server, please try again.");
+    } finally {
+      if (document.querySelector("#logic-form")) setBusy(false);
+    }
+  });
+};
+
+const setupLogicHintButton = (exercise: Exercise) => {
+  findElement("#logic-hint-btn").addEventListener("click", async () => {
+    setBusy(true);
+    try {
+      const response = await postJson(`/api/exercises/${exercise.id}/hint`, {});
+      if (handleAuthErrors(response)) return;
+      const data = await response.json();
+      if (!response.ok) {
+        showError("#logic-error", data.Error);
+        return;
+      }
+      showMessage("#logic-hint", `Hint: ${data.hint}`);
     } catch {
       showError("#logic-error", "Can't reach the server, please try again.");
     } finally {
