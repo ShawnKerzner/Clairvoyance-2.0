@@ -18,6 +18,7 @@ import {
   checkPlanComplete,
 } from "./logicPipeline.js";
 import { evaluateStepCode, revealStepCode } from "./implementationPipeline.js";
+import { generateFinalReveal } from "./revealPipeline.js";
 
 const app = express();
 app.use(express.json());
@@ -757,6 +758,60 @@ app.post("/api/exercises/:id/implementation", requireAuth, async (req, res) => {
       codeSoFar: impl.codeSoFar,
       note,
       nextStep: allDone ? null : impl.stepIndex,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({
+      Error: "The AI couldn't process this right now. Please try again.",
+    });
+  }
+});
+
+app.post("/api/exercises/:id/reveal", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  const apiKey = getOwnedApiKey(req, res);
+  if (!apiKey) {
+    res.status(403).json({ Error: "Please connect your API key" });
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT exercise_text, language, function_signature, solution_code, approach_notes, test_cases, progress
+       FROM exercises
+       WHERE id = $1 AND user_id = $2 AND current_stage = 'reveal'`,
+      [exerciseId, res.locals.userId],
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ Error: "Exercise not found at this stage." });
+      return;
+    }
+    const row = result.rows[0];
+    const progress = row.progress;
+    const studentCode = progress.implementation?.codeSoFar ?? "";
+
+    if (!progress.reveal) {
+      progress.reveal = await generateFinalReveal(
+        apiKey,
+        {
+          exerciseText: row.exercise_text,
+          language: row.language,
+          functionSignature: row.function_signature,
+          solutionCode: row.solution_code,
+          approachNotes: row.approach_notes,
+          finalParaphrase: progress.understanding?.finalParaphrase ?? "",
+          testCases: row.test_cases,
+        },
+        studentCode,
+        progress,
+      );
+      await saveProgress(exerciseId, progress);
+    }
+
+    res.status(200).json({
+      studentCode,
+      solutionCode: row.solution_code,
+      ...progress.reveal,
     });
   } catch (error) {
     console.error(error);
