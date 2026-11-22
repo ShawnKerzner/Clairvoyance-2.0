@@ -15,6 +15,7 @@ import {
   evaluateLogicStep,
   revealLogicStep,
   evaluateEdgeCaseAnswer,
+  checkPlanComplete,
 } from "./logicPipeline.js";
 
 const app = express();
@@ -611,6 +612,62 @@ app.post(
     }
   },
 );
+
+app.post("/api/exercises/:id/logic/done", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  const apiKey = getOwnedApiKey(req, res);
+  if (!apiKey) {
+    res.status(403).json({ Error: "Please connect your API key" });
+    return;
+  }
+
+  try {
+    const loaded = await loadExerciseAtStage(
+      exerciseId,
+      res.locals.userId,
+      "logic",
+    );
+    if (!loaded) {
+      res.status(404).json({ Error: "Exercise not found at this stage." });
+      return;
+    }
+    const { exercise, progress } = loaded;
+    const logic = progress.logic;
+
+    if (!logic || logic.steps.length === 0) {
+      res
+        .status(400)
+        .json({ Error: "Add at least one step to your plan first." });
+      return;
+    }
+    if (logic.pendingEdgeCase) {
+      res
+        .status(409)
+        .json({ Error: "Please answer the edge-case question first." });
+      return;
+    }
+
+    const check = await checkPlanComplete(apiKey, exercise, logic.steps);
+    logic.completenessChecks = (logic.completenessChecks ?? 0) + 1;
+
+    if (check.result === "COMPLETE") {
+      progress.logic = logic;
+      await saveProgress(exerciseId, progress, "implementation");
+      res.status(200).json({ status: "COMPLETE" });
+      return;
+    }
+
+    logic.current.gaps.push(check.gap);
+    progress.logic = logic;
+    await saveProgress(exerciseId, progress);
+    res.status(200).json({ status: "INCOMPLETE", feedback: check.feedback });
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({
+      Error: "The AI couldn't process this right now. Please try again.",
+    });
+  }
+});
 
 app.listen(3000, () => {
   console.log("server is listening on port 3000...");
