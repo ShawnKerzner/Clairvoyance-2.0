@@ -1,7 +1,8 @@
-import { app, findElement, showError } from "../app.ts";
+import { app, findElement, showError, showScreen } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
 import { showMessage, setBusy, handleAuthErrors } from "../screenHelpers.ts";
+import { renderReveal } from "./reveal.ts";
 
 type Exercise = {
   id: number;
@@ -105,6 +106,17 @@ const setupImplementationForm = (exercise: Exercise) => {
         );
         const current = await fetch("/api/exercises/current");
         const currentData = await current.json();
+        if (data.nextStep === null) {
+          showMessage(
+            "#implementation-feedback",
+            "Your code is complete! Let's see how it compares…",
+          );
+          setTimeout(
+            () => showScreen(() => renderReveal(currentData.exercise)),
+            2000,
+          );
+          return;
+        }
         showImplementationState(currentData.exercise.progress);
       } catch {
         showError(
