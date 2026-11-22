@@ -4,6 +4,7 @@ import { postJson } from "../api.ts";
 import { renderLogin } from "./login.ts";
 import { renderApiKey } from "./apiKey.ts";
 import { renderLogic } from "./logic.ts";
+import { showMessage, setBusy, handleAuthErrors } from "../screenHelpers.ts";
 
 type Exercise = {
   id: number;
@@ -46,37 +47,6 @@ export const renderUnderstanding = (exercise: Exercise) => {
   setupUnderstandingForm(exercise);
   setupHintButton(exercise);
   logOut("#understanding-error");
-};
-
-// Shows a message in one of the screen's text areas
-const showMessage = (selector: string, text: string) => {
-  const element = findElement<HTMLElement>(selector);
-  element.textContent = text;
-  element.hidden = false;
-};
-
-// Disables every button while a request is running
-const setBusy = (busy: boolean) => {
-  document
-    .querySelectorAll<HTMLButtonElement>("#app button")
-    .forEach((button) => {
-      button.disabled = busy;
-    });
-};
-
-// Handles the responses every request on this screen can share
-const handleAuthErrors = (response: Response) => {
-  if (response.status === 401) {
-    showScreen(renderLogin);
-    showError("#login-error", "Your session expired. Please log in again.");
-    return true;
-  }
-  if (response.status === 403) {
-    showScreen(renderApiKey);
-    showError("#api-error", "Please connect your API key to continue.");
-    return true;
-  }
-  return false;
 };
 
 const setupUnderstandingForm = (exercise: Exercise) => {
