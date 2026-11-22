@@ -455,6 +455,7 @@ app.post("/api/exercises/:id/logic/step", requireAuth, async (req, res) => {
 
     if (evaluation.status === "SOLID") {
       logic.steps.push(evaluation.cleaned_step);
+      logic.history = [...(logic.history ?? []), logic.current];
       logic.current = { attempts: [], gaps: [], hintsRequested: 0 };
       logic.pendingEdgeCase = evaluation.edge_case
         ? { ...evaluation.edge_case, attempts: [] }
@@ -480,6 +481,7 @@ app.post("/api/exercises/:id/logic/step", requireAuth, async (req, res) => {
       );
       logic.steps.push(reveal.revealed_step);
       logic.revealedSteps += 1;
+      logic.history = [...(logic.history ?? []), logic.current];
       logic.current = { attempts: [], gaps: [], hintsRequested: 0 };
       progress.logic = logic;
       await saveProgress(exerciseId, progress);
@@ -744,6 +746,7 @@ app.post("/api/exercises/:id/implementation", requireAuth, async (req, res) => {
 
     impl.codeSoFar = finishedCode;
     impl.stepIndex += 1;
+    impl.history = [...(impl.history ?? []), impl.current];
     impl.current = { attempts: [], gaps: [], hintsRequested: 0 };
     const allDone = impl.stepIndex >= plan.length;
     progress.implementation = impl;
