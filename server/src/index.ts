@@ -17,6 +17,7 @@ import {
   evaluateEdgeCaseAnswer,
   checkPlanComplete,
 } from "./logicPipeline.js";
+import { evaluateStepCode, revealStepCode } from "./implementationPipeline.js";
 
 const app = express();
 app.use(express.json());
@@ -656,6 +657,104 @@ app.post("/api/exercises/:id/logic/done", requireAuth, async (req, res) => {
     progress.logic = logic;
     await saveProgress(exerciseId, progress);
     res.status(200).json({ status: "INCOMPLETE", feedback: check.feedback });
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({
+      Error: "The AI couldn't process this right now. Please try again.",
+    });
+  }
+});
+
+app.post("/api/exercises/:id/implementation", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  const code = req.body.code;
+  const apiKey = getOwnedApiKey(req, res);
+
+  if (!code || !code.trim()) {
+    res.status(400).json({ Error: "Please write the code for this step." });
+    return;
+  }
+  if (!apiKey) {
+    res.status(403).json({ Error: "Please connect your API key" });
+    return;
+  }
+
+  try {
+    const loaded = await loadExerciseAtStage(
+      exerciseId,
+      res.locals.userId,
+      "implementation",
+    );
+    if (!loaded) {
+      res.status(404).json({ Error: "Exercise not found at this stage." });
+      return;
+    }
+    const { exercise, progress } = loaded;
+    const plan: string[] = progress.logic.steps;
+    const impl = progress.implementation ?? {
+      stepIndex: 0,
+      codeSoFar: "",
+      current: { attempts: [], gaps: [], hintsRequested: 0 },
+      revealedSteps: 0,
+    };
+
+    const attemptNumber = impl.current.attempts.length + 1;
+    const evaluation = await evaluateStepCode(
+      apiKey,
+      exercise,
+      plan,
+      impl.stepIndex,
+      impl.codeSoFar,
+      code,
+      attemptNumber,
+    );
+    impl.current.attempts.push(code);
+
+    let finishedCode: string | null = null;
+    let note = "";
+    if (evaluation.status === "SOLID") {
+      finishedCode = evaluation.code_so_far;
+    } else {
+      impl.current.gaps.push(evaluation.gap);
+      if (attemptNumber >= 5) {
+        const reveal = await revealStepCode(
+          apiKey,
+          exercise,
+          plan,
+          impl.stepIndex,
+          impl.codeSoFar,
+          impl.current.attempts,
+        );
+        finishedCode = reveal.code_so_far;
+        note = reveal.note;
+        impl.revealedSteps += 1;
+      }
+    }
+
+    if (finishedCode === null) {
+      progress.implementation = impl;
+      await saveProgress(exerciseId, progress);
+      res.status(200).json({
+        status: "WEAK",
+        feedback: evaluation.feedback,
+        attemptNumber: attemptNumber + 1,
+      });
+      return;
+    }
+
+    impl.codeSoFar = finishedCode;
+    impl.stepIndex += 1;
+    impl.current = { attempts: [], gaps: [], hintsRequested: 0 };
+    const allDone = impl.stepIndex >= plan.length;
+    progress.implementation = impl;
+    await saveProgress(exerciseId, progress, allDone ? "reveal" : undefined);
+
+    res.status(200).json({
+      status: note ? "REVEALED" : "SOLID",
+      codeSoFar: impl.codeSoFar,
+      note,
+      nextStep: allDone ? null : impl.stepIndex,
+    });
   } catch (error) {
     console.error(error);
     res.status(502).json({
