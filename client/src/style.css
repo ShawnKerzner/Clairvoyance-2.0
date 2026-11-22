@@ -13,7 +13,9 @@
 
 #intake-form,
 #clarification-form,
-#understanding-form, #logic-form {
+#understanding-form, 
+#logic-form,
+#implementation-form {
   display: flex;
   flex-direction: column;
   gap: 8px;
