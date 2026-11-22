@@ -1,7 +1,8 @@
-import { app, findElement, showError } from "../app.ts";
+import { app, findElement, showError, showScreen } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
 import { showMessage, setBusy, handleAuthErrors } from "../screenHelpers.ts";
+import { renderImplementation } from "./implementation.ts";
 
 type Exercise = {
   id: number;
@@ -207,7 +208,11 @@ const setupDoneButton = (exercise: Exercise) => {
         showMessage("#logic-feedback", data.feedback);
         return;
       }
-      showMessage("#logic-feedback", "Your plan is complete!");
+      showMessage(
+        "#logic-feedback",
+        "Your plan is complete! Moving on to writing the code…",
+      );
+      setTimeout(() => showScreen(() => renderImplementation(exercise)), 2000);
     } catch {
       showError("#logic-error", "Can't reach the server, please try again.");
     } finally {
