@@ -1,5 +1,7 @@
-import { app, findElement } from "../app.ts";
+import { app, findElement, showError } from "../app.ts";
 import { logOut } from "../navigation.ts";
+import { postJson } from "../api.ts";
+import { showMessage, setBusy, handleAuthErrors } from "../screenHelpers.ts";
 
 type Exercise = {
   id: number;
@@ -40,6 +42,7 @@ export const renderImplementation = (exercise: Exercise) => {
     exercise.exerciseText;
   logOut("#implementation-error");
   showImplementationState(exercise.progress);
+  setupImplementationForm(exercise);
 };
 
 const showImplementationState = (progress: Record<string, any>) => {
@@ -63,4 +66,53 @@ const showImplementationState = (progress: Record<string, any>) => {
   const attemptsUsed = impl?.current?.attempts.length ?? 0;
   findElement("#implementation-attempt").textContent =
     `Attempt ${attemptsUsed + 1} of 5`;
+};
+
+const setupImplementationForm = (exercise: Exercise) => {
+  findElement("#implementation-form").addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
+      const input = findElement<HTMLTextAreaElement>("#implementation-input");
+      showError("#implementation-error", "");
+      showMessage("#implementation-feedback", "Checking your code…");
+      setBusy(true);
+
+      try {
+        const response = await postJson(
+          `/api/exercises/${exercise.id}/implementation`,
+          { code: input.value },
+        );
+        if (handleAuthErrors(response)) return;
+        const data = await response.json();
+
+        if (!response.ok) {
+          showError("#implementation-error", data.Error);
+          return;
+        }
+
+        if (data.status === "WEAK") {
+          showMessage("#implementation-feedback", data.feedback);
+          findElement("#implementation-attempt").textContent =
+            `Attempt ${data.attemptNumber} of 5`;
+          return;
+        }
+        input.value = "";
+        showMessage(
+          "#implementation-feedback",
+          data.status === "SOLID" ? "Nice, that step works." : data.note,
+        );
+        const current = await fetch("/api/exercises/current");
+        const currentData = await current.json();
+        showImplementationState(currentData.exercise.progress);
+      } catch {
+        showError(
+          "#implementation-error",
+          "Can't reach the server, please try again.",
+        );
+      } finally {
+        if (document.querySelector("#implementation-form")) setBusy(false);
+      }
+    },
+  );
 };
