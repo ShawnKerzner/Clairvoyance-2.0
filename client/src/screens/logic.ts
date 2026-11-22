@@ -1,7 +1,7 @@
-import { app, findElement } from "../app.ts";
+import { app, findElement, showError } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
-import { showMessage } from "../screenHelpers.ts";
+import { showMessage, setBusy, handleAuthErrors } from "../screenHelpers.ts";
 
 type Exercise = {
   id: number;
@@ -95,24 +95,39 @@ const setupLogicForm = (exercise: Exercise) => {
   findElement("#logic-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const input = findElement<HTMLTextAreaElement>("#logic-input");
-    const response = await postJson(
-      `/api/exercises/${exercise.id}/logic/step`,
-      { stepText: input.value },
-    );
-    const data = await response.json();
+    showError("#logic-error", "");
+    setBusy(true);
 
-    if (data.status === "WEAK") {
-      showMessage("#logic-feedback", data.feedback);
-      findElement("#logic-attempt").textContent =
-        `Attempt ${data.attemptNumber} of 5`;
-      return;
+    try {
+      const response = await postJson(
+        `/api/exercises/${exercise.id}/logic/step`,
+        { stepText: input.value },
+      );
+      if (handleAuthErrors(response)) return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        showError("#logic-error", data.Error);
+        return;
+      }
+
+      if (data.status === "WEAK") {
+        showMessage("#logic-feedback", data.feedback);
+        findElement("#logic-attempt").textContent =
+          `Attempt ${data.attemptNumber} of 5`;
+        return;
+      }
+
+      input.value = "";
+      showMessage(
+        "#logic-feedback",
+        data.status === "SOLID" ? "Step added." : data.note,
+      );
+      await refreshLogic();
+    } catch {
+      showError("#logic-error", "Can't reach the server, please try again.");
+    } finally {
+      if (document.querySelector("#logic-form")) setBusy(false);
     }
-
-    input.value = "";
-    showMessage(
-      "#logic-feedback",
-      data.status === "SOLID" ? "Step added." : data.note,
-    );
-    await refreshLogic();
   });
 };
