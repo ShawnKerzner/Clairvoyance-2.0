@@ -3,7 +3,18 @@
 A hand-built remake of the Base44 hackathon app. Beginner coders paste a LeetCode-style exercise and are guided Socratically from understanding to working code, never handed the answer early.
 
 **Target user:** beginner coders who struggle to connect what they've learned to actually solving a problem.
-**Timeline:** one week of focused building now (before class resumes); the project later becomes the course capstone, so the MVP can keep growing after this week.
+**Timeline:** Developers Institute final project. Submission deadline **2026-11-23**, demo day **2026-11-24**.
+
+| Days | Goal |
+| --- | --- |
+| Sun 15 – Mon 16 | Finish chunk 1: startup flow, logout link, tie API key to its owner |
+| Tue 17 – Wed 18 | Chunk 2: intake + silent solve (start from v1 prompts) |
+| Thu 19 – Fri 20 | Chunks 3–4: understanding check, logic walkthrough |
+| Sat 21 | Chunk 5: implementation |
+| Sun 22 | Chunk 6: final reveal + basic styling |
+| Mon 23 | Deploy, end-to-end test, submit |
+
+Chunk 7 (past exercises) and backlog items move to after demo day unless there's time.
 **Languages supported:** JavaScript and Python (student picks per exercise).
 
 ---
@@ -73,8 +84,8 @@ Each chunk goes through frontend, backend and database together, so there's a wo
 
 | Chunk | Status |
 | --- | --- |
-| 1. Accounts + API key | In progress |
-| 2. Intake + silent solve | Not started |
+| 1. Accounts + API key | Done |
+| 2. Intake + silent solve | Done |
 | 3. Understanding Check | Not started |
 | 4. Logic Walkthrough | Not started |
 | 5. Implementation | Not started |
@@ -84,6 +95,13 @@ Each chunk goes through frontend, backend and database together, so there's a wo
 ---
 
 ## Open questions (parked)
+- **Ideas backlog (after demo day):** "Start a new exercise" button for students with an unfinished exercise; reject nonsense clarification answers instead of proceeding on assumptions; chunk 7 past exercises; stay-signed-in prompt; cookie encryption; exercise cache. Add new ideas here as they come up.
+- Backlog hardening: encrypt the `apiKey` cookie value with a server secret so the raw key isn't visible in DevTools.
+- AI prompts (chunks 2–6): v2 prompts written and approved, see `prompts-v2.md`. Decisions: no function-design step, interactive-input exercises become plain functions, no Refactor stage, one clarification round.
+- Frontend design and UX pass after the core pipeline works: the goal is an excellent experience for students. Discuss direction when we get there.
+  - Layout idea for every stage: the exercise moves to the side as a reference, and the active task (clarification, understanding, logic, code) takes the center. Keep each screen's sections in their own wrappers with ids, so this is a CSS-only change.
+  - Replace the placeholder loading text with a modern loading animation.
+  - Prompt polish: the clarifying question sometimes asks two things at once.
 - Exact edge-case flow in the Logic Walkthrough (chunk 4)
 - Making API key setup intuitive for beginners (chunk 1). Must explain that a Claude subscription (Pro/Max) does not include API access; the API is billed separately through Console credits.
 
@@ -146,7 +164,49 @@ CREATE TABLE sessions (
 - ✅ `GET /api/api-key` (protected): 200 `{ connected: true | false }` based on whether the `apiKey` cookie exists
 - ✅ `DELETE /api/api-key` (protected): clears the `apiKey` cookie, 204
 - ✅ Logout also clears the `apiKey` cookie (protects shared computers)
-- ⏭️ Next: chunk 1 frontend screens
+- ✅ Frontend: login, signup and API key screens working end to end; shared helpers `findElement`, `showError` (app.ts), `postJson` (api.ts); `showNextScreen` and `logOut` (navigation.ts); startup flow in main.ts uses `showNextScreen`; placeholder exercise intake screen with logout
+- ✅ API key tied to its owner: signed `apiKeyOwner` cookie (cookie-parser + `COOKIE_SECRET`), checked at the point of use by `getOwnedApiKey` (server/src/apiKey.ts); a mismatched, missing or tampered owner clears both key cookies. `GET /api/api-key` uses it. Every future AI route must use it too.
+- ✅ **Chunk 1 complete**
+
+### Chunk 2: Intake + silent solve (done)
+**Table:** `exercises` (id, user_id → users, language, exercise_text, clarification JSONB, function_signature, solution_code, approach_notes, assumptions, test_cases JSONB, self_check_passed BOOLEAN, self_check_notes, current_stage default 'understanding', created_at default NOW()).
+
+**Server**
+- `prompts/fillPrompt.ts` swaps `{{placeholders}}`; `prompts/shared.ts` holds the shared blocks; `prompts/intake.ts` holds the four intake templates.
+- `askClaude(apiKey, prompt)`: Sonnet 5.5, picks the text block, keeps the first `{` to last `}`, parses JSON, throws clear errors.
+- `intakePipeline.ts`: `checkExercise`, `solveExercise`, `writeTestCases`, `checkSolution`, and `buildReferenceSolution` (self-check with up to 2 retries using fixContext; never blocks).
+- `POST /api/exercises` (protected): 400 bad input, 403 no owned key, 400 INVALID (Claude's explanation), 200 `{ needsClarification, question }`, 201 `{ id, currentStage, assumptions }` (never the solution), 502 if Claude fails.
+
+**Client**
+- Intake screen: language picker, exercise box, hidden clarification section (question, answer, Continue, Edit exercise), loading message with buttons disabled.
+- `submitExercise` shared by Start and Continue; 401 → login, 403 → key screen, 201 → Understanding Check placeholder.
+
+**Known gap:** refreshing on the Understanding Check goes back to intake, because `showNextScreen` doesn't check for an unfinished exercise yet. First task of chunk 3.
+
+- ⏭️ Next: chunk 3 (Understanding Check)
+
+### Status as of 2026-11-22 evening
+✅ **All stages are coded and tested end to end:** intake → Understanding Check → Logic Walkthrough → Implementation → Final Reveal → Finish (back to intake).
+
+**Chunk 4, Logic Walkthrough:** `progress.logic` (steps, current, pendingEdgeCase, edgeCases, revealedSteps, history, completenessChecks). Routes: `/logic/step`, `/logic/edge-case` (answer or skip; required can't be skipped; 5 WEAK → unresolved), `/logic/done` (completeness check → implementation). Screen: numbered plan, step / edge-case modes, skip, hint, I'm done.
+
+**Chunk 5, Implementation:** students start from an empty editor (step 1 includes the function line). `progress.implementation` (stepIndex, codeSoFar, current, revealedSteps, history). Route: `/implementation` (SOLID or 5th-attempt reveal adds the step; last step → reveal). Screen: plan with the current step marked, code so far, code box, hint.
+
+**Chunk 6, Final Reveal:** `generateFinalReveal` (comparison, approach explanation, growth recap built only from `summarizeJourney`). Route `/reveal` generates once and saves it in `progress.reveal`; `/finish` marks the exercise complete. Screen: both codes, three sections, Finish button.
+
+**Shared:** `exerciseStore.ts` (loadExerciseAtStage, saveProgress), `screenHelpers.ts` (showMessage, setBusy, handleAuthErrors), hint route works for every stage via `hintContextForStage`.
+
+**Monday 23 (submission day):** facelift → deploy → end-to-end test with the demo exercise → submit.
+
+### Chunk 3: Understanding Check (done)
+- `exercises.progress` JSONB tracks each stage's attempts, gaps, hintsRequested, answerRevealed and final text.
+- `GET /api/exercises/current` returns the newest unfinished exercise (id, currentStage, assumptions, exerciseText); `showExerciseScreen` resumes the right stage on load.
+- `POST /api/exercises/:id/understanding`: WEAK (feedback + next attempt number), SOLID or a 5th-attempt REVEALED both move the stage to `logic`.
+- `POST /api/exercises/:id/hint`: escalating hints, free (no attempts used). Hints use `askClaudeText` (plain text), because Claude sometimes skipped the JSON wrapper.
+- Screen: explanation box, feedback, attempt counter, hint button; placeholder Logic Walkthrough screen.
+- **To finish:** retest the hint button, SOLID → Logic, refresh on Logic.
+- **Polish before demo:** attempt counter resets to 1 after a refresh (send the attempt count with the exercise); feedback can mention the reference function name (add "never mention the reference signature's name or parameters" to EVALUATE_PARAPHRASE).
+- **If invalid JSON recurs elsewhere:** switch `askClaude` to structured outputs.
 
 **Frontend (chunk 1)**
 - Single-page app: one `index.html` with `<div id="app">`; each screen is a `render...` function; `showScreen(render)` clears `#app` (`innerHTML = ""`) and draws the new screen.
