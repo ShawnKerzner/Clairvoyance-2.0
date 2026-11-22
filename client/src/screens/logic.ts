@@ -47,9 +47,12 @@ export const renderLogic = (exercise: Exercise) => {
   setupLogicForm(exercise);
 };
 
+let answeringEdgeCase = false;
+
 const showLogicState = (logic: Record<string, any> | undefined) => {
   const steps: string[] = logic?.steps ?? [];
   const pending = logic?.pendingEdgeCase ?? null;
+  answeringEdgeCase = pending !== null;
 
   const list = findElement("#logic-steps");
   list.innerHTML = "";
@@ -99,10 +102,13 @@ const setupLogicForm = (exercise: Exercise) => {
     setBusy(true);
 
     try {
-      const response = await postJson(
-        `/api/exercises/${exercise.id}/logic/step`,
-        { stepText: input.value },
-      );
+      const response = answeringEdgeCase
+        ? await postJson(`/api/exercises/${exercise.id}/logic/edge-case`, {
+            answer: input.value,
+          })
+        : await postJson(`/api/exercises/${exercise.id}/logic/step`, {
+            stepText: input.value,
+          });
       if (handleAuthErrors(response)) return;
       const data = await response.json();
 
