@@ -43,6 +43,7 @@ export const renderImplementation = (exercise: Exercise) => {
   logOut("#implementation-error");
   showImplementationState(exercise.progress);
   setupImplementationForm(exercise);
+  setupImplementationHintButton(exercise);
 };
 
 const showImplementationState = (progress: Record<string, any>) => {
@@ -105,6 +106,35 @@ const setupImplementationForm = (exercise: Exercise) => {
         const current = await fetch("/api/exercises/current");
         const currentData = await current.json();
         showImplementationState(currentData.exercise.progress);
+      } catch {
+        showError(
+          "#implementation-error",
+          "Can't reach the server, please try again.",
+        );
+      } finally {
+        if (document.querySelector("#implementation-form")) setBusy(false);
+      }
+    },
+  );
+};
+
+const setupImplementationHintButton = (exercise: Exercise) => {
+  findElement("#implementation-hint-btn").addEventListener(
+    "click",
+    async () => {
+      setBusy(true);
+      try {
+        const response = await postJson(
+          `/api/exercises/${exercise.id}/hint`,
+          {},
+        );
+        if (handleAuthErrors(response)) return;
+        const data = await response.json();
+        if (!response.ok) {
+          showError("#implementation-error", data.Error);
+          return;
+        }
+        showMessage("#implementation-hint", `Hint: ${data.hint}`);
       } catch {
         showError(
           "#implementation-error",
