@@ -57,6 +57,22 @@ export const hintContextForStage = (
       attempts: logic.current.attempts,
     };
   }
+  if (stage === "implementation") {
+    progress.implementation ??= {
+      stepIndex: 0,
+      codeSoFar: "",
+      current: { attempts: [], gaps: [], hintsRequested: 0 },
+      revealedSteps: 0,
+    };
+    const impl = progress.implementation;
+    const step = progress.logic?.steps?.[impl.stepIndex] ?? "";
+    return {
+      record: impl.current,
+      promptStage: "code",
+      stageContext: `The student is writing the code for step ${impl.stepIndex + 1} of their plan: "${step}"\n\nTheir code so far (ALREADY done, never hint at it again):\n${impl.codeSoFar || "(no code yet, they start from an empty editor and must also write the function line)"}`,
+      attempts: impl.current.attempts,
+    };
+  }
 
   return null;
 };
