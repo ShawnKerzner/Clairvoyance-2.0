@@ -47,6 +47,7 @@ export const renderLogic = (exercise: Exercise) => {
   setupLogicForm(exercise);
   setupSkipButton(exercise);
   setupLogicHintButton(exercise);
+  setupDoneButton(exercise);
 };
 
 let answeringEdgeCase = false;
@@ -179,6 +180,34 @@ const setupLogicHintButton = (exercise: Exercise) => {
         return;
       }
       showMessage("#logic-hint", `Hint: ${data.hint}`);
+    } catch {
+      showError("#logic-error", "Can't reach the server, please try again.");
+    } finally {
+      if (document.querySelector("#logic-form")) setBusy(false);
+    }
+  });
+};
+
+const setupDoneButton = (exercise: Exercise) => {
+  findElement("#logic-done-btn").addEventListener("click", async () => {
+    showMessage("#logic-feedback", "Checking your whole plan…");
+    setBusy(true);
+    try {
+      const response = await postJson(
+        `/api/exercises/${exercise.id}/logic/done`,
+        {},
+      );
+      if (handleAuthErrors(response)) return;
+      const data = await response.json();
+      if (!response.ok) {
+        showError("#logic-error", data.Error);
+        return;
+      }
+      if (data.status === "INCOMPLETE") {
+        showMessage("#logic-feedback", data.feedback);
+        return;
+      }
+      showMessage("#logic-feedback", "Your plan is complete!");
     } catch {
       showError("#logic-error", "Can't reach the server, please try again.");
     } finally {
