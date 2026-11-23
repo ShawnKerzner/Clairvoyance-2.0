@@ -95,7 +95,9 @@ select:focus {
 }
 textarea { line-height: 1.7; resize: vertical; }
 input[readonly],
-textarea[readonly] { opacity: 0.7; }
+textarea[readonly] { caret-color: transparent; }
+input[readonly]:focus,
+textarea[readonly]:focus { border-color: var(--glass-border); box-shadow: none; }
 
 button {
   padding: clamp(12px, 0.9vw, 16px) 22px;
@@ -319,13 +321,21 @@ h1, h2 {
 .intake-card:has(#exercise-intake-loading:not([hidden])) .intake-title { display: none !important; }
 
 /* ===== Intake: the clarification step ===== */
+/* While the question shows, the exercise is a read-only reference, not an input */
 .intake-card:has(#clarification-section:not([hidden])) #exercise-intake {
   min-height: 0;
   height: auto;
-  max-height: 110px;
+  max-height: 120px;
   resize: none;
-  opacity: 0.7;
+  opacity: 1;
+  color: var(--text);
   font-size: clamp(13px, 0.85vw, 14.5px);
+  background: rgba(11, 15, 36, 0.35);
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  caret-color: transparent;
+  cursor: default;
+  pointer-events: none;
 }
 .clarify { margin-top: 22px; }
 .clarify-label { color: var(--accent); font-size: clamp(12px, 0.8vw, 14px); letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 8px; }
