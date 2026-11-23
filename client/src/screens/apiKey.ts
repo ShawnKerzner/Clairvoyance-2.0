@@ -77,8 +77,11 @@ export const renderApiKey = () => {
 const setupApiKeyForm = () => {
   const apiKeyForm = findElement("#api-form");
   const apiInput = findElement<HTMLInputElement>("#api-key-input");
+  const connectButton = findElement<HTMLButtonElement>("#connect-api-btn");
   apiKeyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    connectButton.textContent = "Checking your key…";
+    connectButton.disabled = true;
     try {
       const response = await postJson("/api/api-key", {
         apiKey: apiInput.value,
@@ -93,9 +96,17 @@ const setupApiKeyForm = () => {
         showError("#api-error", data.Error);
         return;
       }
-      showNextScreen();
+      // A short success moment before moving on
+      connectButton.textContent = "Connected ✓";
+      connectButton.classList.add("connected");
+      window.setTimeout(showNextScreen, 1100);
     } catch (error) {
       showError("#api-error", "Can't reach the server, please try again");
+    } finally {
+      if (!connectButton.classList.contains("connected")) {
+        connectButton.textContent = "Connect key";
+        connectButton.disabled = false;
+      }
     }
   });
 };

@@ -193,9 +193,9 @@ h1, h2 {
   max-width: clamp(420px, 32vw, 640px);
   padding: clamp(32px, 3vw, 56px) clamp(28px, 2.8vw, 52px);
 }
-.key-title-row { display: flex; align-items: center; justify-content: center; gap: 4px; margin-left: -12px; }
+.key-title-row { display: flex; align-items: center; justify-content: center; gap: 0; margin-left: -20px; }
 .key-title-row h1 { margin: 0; font-size: clamp(30px, 2.2vw, 42px); }
-.key-logo { width: 64px; height: 64px; flex: none; }
+.key-logo { --mini: 190px; width: var(--mini); height: var(--mini); flex: none; margin: calc(var(--mini) * -0.32) calc(var(--mini) * -0.3) calc(var(--mini) * -0.32) calc(var(--mini) * -0.32); pointer-events: none; }
 .key-dots { display: flex; justify-content: center; gap: 10px; margin: clamp(16px, 2.4vh, 24px) 0 clamp(20px, 3vh, 30px); }
 .key-dots span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); transition: all 0.5s; }
 .key-dots span.done { background: rgba(125, 211, 252, 0.55); }
@@ -242,14 +242,15 @@ h1, h2 {
 .key-field { position: relative; }
 .key-field input { padding-right: 52px; }
 .key-field input.looks-wrong { border-color: var(--amber); box-shadow: 0 0 0 4px rgba(245, 194, 122, 0.12); }
-.key-eye {
-  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  padding: 7px; border: none; border-radius: 8px;
+.key-field .key-eye {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; padding: 0; margin: 0;
+  border: none; border-radius: 8px; box-shadow: none; background: none;
   display: grid; place-items: center;
-  color: var(--text-dim); font-size: 18px;
+  color: var(--text-dim); font-size: 18px; line-height: 0;
 }
-.key-eye:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
-.key-eye:active { transform: translateY(-50%) scale(0.95); }
+.key-field .key-eye:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); box-shadow: none; }
+.key-field .key-eye:active { transform: translateY(-50%) scale(0.95); }
 .key-eye .eye-off { display: none; }
 .key-eye.showing .eye-on { display: none; }
 .key-eye.showing .eye-off { display: block; }
@@ -257,6 +258,14 @@ h1, h2 {
 .key-hint:empty { display: none; }
 .key-privacy { display: flex; align-items: center; gap: 8px; }
 .key-privacy .icon { color: var(--accent); }
+
+.key-form button.connected,
+.key-form button.connected:disabled {
+  opacity: 1;
+  cursor: default;
+  background: linear-gradient(135deg, #d1fae5, #6ee7b7);
+  box-shadow: 0 0 40px rgba(110, 231, 183, 0.6);
+}
 
 /* ===== Existing form layout ===== */
 #intake-form {
