@@ -1,4 +1,5 @@
 import express from "express";
+import { fileURLToPath } from "node:url";
 import { pool } from "./db.js";
 import bcrypt from "bcryptjs";
 import { createSession } from "./sessions.js";
@@ -864,6 +865,10 @@ app.post("/api/exercises/:id/exit", requireAuth, async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("server is listening on port 3000...");
+// In production, the same server also serves the built frontend (client/dist)
+app.use(express.static(fileURLToPath(new URL("../../client/dist", import.meta.url))));
+
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, () => {
+  console.log(`server is listening on port ${port}...`);
 });
