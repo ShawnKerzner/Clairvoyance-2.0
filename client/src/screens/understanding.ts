@@ -124,6 +124,7 @@ const setupUnderstandingForm = (exercise: Exercise) => {
           "Can't reach the server, please try again.",
         );
       } finally {
+        stopChecking("#understanding-checking");
         if (document.querySelector("#understanding-form")) setBusy(false);
       }
     },
