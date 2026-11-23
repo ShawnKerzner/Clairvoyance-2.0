@@ -1,10 +1,8 @@
 import { app, findElement, showError, showScreen } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
-import { renderLogin } from "./login.ts";
-import { renderApiKey } from "./apiKey.ts";
 import { renderLogic } from "./logic.ts";
-import { showMessage, setBusy, handleAuthErrors } from "../screenHelpers.ts";
+import { showMessage, setBusy, handleAuthErrors, setupExitLink } from "../screenHelpers.ts";
 
 type Exercise = {
   id: number;
@@ -36,6 +34,7 @@ export const renderUnderstanding = (exercise: Exercise) => {
       </form>
     </section>
 
+    <a href="#" id="exit-exercise-link">Exit exercise</a>
     <a href="#" id="logout-link">Logout</a>
   `;
   findElement("#understanding-exercise-text").textContent =
@@ -47,6 +46,7 @@ export const renderUnderstanding = (exercise: Exercise) => {
   setupUnderstandingForm(exercise);
   setupHintButton(exercise);
   logOut("#understanding-error");
+  setupExitLink(exercise.id, "#understanding-error");
 };
 
 const setupUnderstandingForm = (exercise: Exercise) => {

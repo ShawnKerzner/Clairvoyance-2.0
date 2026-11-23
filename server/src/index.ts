@@ -841,6 +841,27 @@ app.post("/api/exercises/:id/finish", requireAuth, async (req, res) => {
   }
 });
 
+// Leave an unfinished exercise early, so the student can start a new one
+app.post("/api/exercises/:id/exit", requireAuth, async (req, res) => {
+  const exerciseId = Number(req.params.id);
+  try {
+    const result = await pool.query(
+      `UPDATE exercises SET current_stage = 'complete'
+       WHERE id = $1 AND user_id = $2 AND current_stage != 'complete'
+       RETURNING id`,
+      [exerciseId, res.locals.userId],
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ Error: "Exercise not found." });
+      return;
+    }
+    res.status(200).json({ status: "EXITED" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ Error: "Something went wrong. Please try again." });
+  }
+});
+
 app.listen(3000, () => {
   console.log("server is listening on port 3000...");
 });
