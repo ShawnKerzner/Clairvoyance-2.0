@@ -1,3 +1,4 @@
+import { setSkyMode } from "./sky.ts";
 export const findElement = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
   if (!element) {
@@ -9,6 +10,7 @@ export const findElement = <T extends Element>(selector: string): T => {
 export const app = findElement("#app");
 
 export const showScreen = (renderScreen: () => void) => {
+  setSkyMode("full");
   app.innerHTML = "";
   renderScreen();
 };

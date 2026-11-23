@@ -2,7 +2,7 @@ import { app, findElement, showError, showScreen } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
 import { renderLogic } from "./logic.ts";
-import { showMessage, setBusy, handleAuthErrors, setupExitLink } from "../screenHelpers.ts";
+import { showMessage, setBusy, handleAuthErrors, setupExitLink, stageRow, setAttempt, showYouWrote, setupStudyScreen, startChecking, stopChecking } from "../screenHelpers.ts";
 
 type Exercise = {
   id: number;
@@ -13,40 +13,53 @@ type Exercise = {
 
 export const renderUnderstanding = (exercise: Exercise) => {
   app.innerHTML = `
-    <h1>Understanding Check</h1>
-    <p id="understanding-error"></p>
+    ${stageRow("understand")}
+    <div class="stage-page">
+      <div class="stage-grid">
+        <aside class="panel" id="understanding-exercise">
+          <p class="panel-label">Your exercise</p>
+          <p class="exercise-text" id="understanding-exercise-text"></p>
+          <p class="assumptions" id="understanding-assumptions"></p>
+        </aside>
 
-    <section id="understanding-exercise">
-      <h2>Your exercise</h2>
-      <p id="understanding-exercise-text"></p>
-      <p id="understanding-assumptions"></p>
-    </section>
-
-    <section id="understanding-task">
-      <form id="understanding-form">
-        <label for="understanding-answer">In your own words, what is this exercise asking you to do?</label>
-        <textarea id="understanding-answer" rows="5" placeholder="e.g. It wants a function that takes... and gives back..."></textarea>
-        <p id="understanding-attempt">Attempt 1 of 5</p>
-        <p id="understanding-feedback" hidden></p>
-        <p id="understanding-hint" hidden></p>
-        <button type="submit">Check my understanding</button>
-        <button type="button" id="understanding-hint-btn">Get a hint</button>
-      </form>
-    </section>
-
-    <a href="#" id="exit-exercise-link">Exit exercise</a>
-    <a href="#" id="logout-link">Logout</a>
+        <main class="card task" id="understanding-task">
+          <h1>What is this exercise asking?</h1>
+          <p class="task-prompt">Explain it in your own words: what goes in, and what should come out. You don't need to know how to solve it yet.</p>
+          <p class="reassure">Hints are free: they never use up your attempts.</p>
+          <p id="understanding-error" class="auth-error"></p>
+          <form id="understanding-form" class="task-form">
+            <div id="understanding-checking" class="checking" hidden></div>
+            <p id="understanding-you-wrote" class="you-wrote" hidden></p>
+            <p id="understanding-feedback" class="tutor-msg" hidden></p>
+            <p id="understanding-hint" class="hint-msg" hidden></p>
+            <label for="understanding-answer">Your explanation</label>
+            <textarea id="understanding-answer" rows="5" placeholder="It takes... and gives back..."></textarea>
+            <div class="task-row">
+              <p id="understanding-attempt">Attempt 1 of 5</p>
+              <div class="task-actions">
+                <button type="button" id="understanding-hint-btn">Get a hint</button>
+                <button type="submit">Check</button>
+              </div>
+            </div>
+          </form>
+          <div class="key-footer">
+            <a href="#" id="exit-exercise-link">Exit exercise</a>
+            <a href="#" id="logout-link">Log out</a>
+          </div>
+        </main>
+      </div>
+    </div>
   `;
   findElement("#understanding-exercise-text").textContent =
     exercise.exerciseText;
   findElement("#understanding-assumptions").textContent = exercise.assumptions;
   const attemptsUsed = exercise.progress.understanding?.attempts.length ?? 0;
-  findElement("#understanding-attempt").textContent =
-    `Attempt ${attemptsUsed + 1} of 5`;
+  setAttempt("#understanding-attempt", attemptsUsed + 1);
   setupUnderstandingForm(exercise);
   setupHintButton(exercise);
   logOut("#understanding-error");
   setupExitLink(exercise.id, "#understanding-error");
+  setupStudyScreen();
 };
 
 const setupUnderstandingForm = (exercise: Exercise) => {
@@ -66,7 +79,10 @@ const setupUnderstandingForm = (exercise: Exercise) => {
       }
 
       showError("#understanding-error", "");
-      showMessage("#understanding-feedback", "Checking your explanation…");
+      findElement<HTMLElement>("#understanding-you-wrote").hidden = true;
+      findElement("#understanding-feedback").classList.remove("success");
+      findElement<HTMLElement>("#understanding-feedback").hidden = true;
+      startChecking("#understanding-checking", 1, "Checking your explanation…");
       setBusy(true);
 
       try {
@@ -83,12 +99,13 @@ const setupUnderstandingForm = (exercise: Exercise) => {
         }
 
         if (data.status === "WEAK") {
+          showYouWrote("#understanding-you-wrote", paraphrase.trim());
           showMessage("#understanding-feedback", data.feedback);
-          findElement("#understanding-attempt").textContent =
-            `Attempt ${data.attemptNumber} of 5`;
+          setAttempt("#understanding-attempt", data.attemptNumber);
           return;
         }
 
+        findElement("#understanding-feedback").classList.add("success");
         if (data.status === "SOLID") {
           showMessage(
             "#understanding-feedback",

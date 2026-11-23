@@ -3,6 +3,8 @@ import { renderLogin } from "./screens/login.ts";
 import { renderApiKey } from "./screens/apiKey.ts";
 import { renderExerciseIntake } from "./screens/intake.ts";
 import { postJson } from "./api.ts";
+import { setSkyMode } from "./sky.ts";
+import { createNova, type NovaLevel } from "./nova.ts";
 
 export const showMessage = (selector: string, text: string) => {
   const element = findElement<HTMLElement>(selector);
@@ -64,4 +66,84 @@ export const setupExitLink = (exerciseId: number, errorSelector: string) => {
       showError(errorSelector, "Can't reach the server, please try again.");
     }
   });
+};
+
+// The Understand → Plan → Code → Review row shown at the top of every study screen
+const STAGES = [
+  ["understand", "Understand"],
+  ["plan", "Plan"],
+  ["code", "Code"],
+  ["review", "Review"],
+] as const;
+export type StageName = (typeof STAGES)[number][0];
+
+export const stageRow = (current: StageName) => {
+  const currentIndex = STAGES.findIndex(([key]) => key === current);
+  const items = STAGES.map(([, label], index) => {
+    const state = index < currentIndex ? "done" : index === currentIndex ? "now" : "";
+    return `<span class="stage ${state}">${label}</span>`;
+  }).join('<span class="stage-line"></span>');
+  return `<nav class="progress" id="stage-row" aria-label="Your progress">${items}</nav>`;
+};
+
+// "Attempt 2 of 5" plus five dots; hidden on the first attempt so a fresh screen doesn't feel like a countdown
+export const setAttempt = (selector: string, attemptNumber: number) => {
+  const element = findElement<HTMLElement>(selector);
+  element.classList.add("attempts");
+  element.hidden = attemptNumber <= 1;
+  element.textContent = `Attempt ${attemptNumber} of 5`;
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.createElement("i");
+    if (i < attemptNumber) dot.className = "used";
+    if (i === attemptNumber) dot.className = "current";
+    element.appendChild(dot);
+  }
+};
+
+// "You wrote: …" above the tutor's reply, so the two read as one exchange
+export const showYouWrote = (selector: string, text: string) => {
+  const element = findElement<HTMLElement>(selector);
+  element.textContent = "";
+  element.append("You wrote: ");
+  const quote = document.createElement("em");
+  quote.textContent = text;
+  element.appendChild(quote);
+  element.hidden = !text;
+};
+
+// Study screens: a quieter sky, and the stage row only shows at the very top of the page
+export const setupStudyScreen = () => {
+  setSkyMode("quiet");
+  const row = document.getElementById("stage-row");
+  if (!row) return;
+  const update = () => {
+    if (!row.isConnected) {
+      window.removeEventListener("scroll", update);
+      return;
+    }
+    row.classList.toggle("tucked", window.scrollY > 8);
+  };
+  window.addEventListener("scroll", update, { passive: true });
+  update();
+};
+
+// A small spell with a short message while Claude checks an answer
+export const startChecking = (selector: string, level: NovaLevel, text: string) => {
+  const box = findElement<HTMLElement>(selector);
+  box.textContent = "";
+  const canvas = document.createElement("canvas");
+  canvas.className = "checking-nova";
+  canvas.setAttribute("aria-hidden", "true");
+  const label = document.createElement("span");
+  label.textContent = text;
+  box.append(canvas, label);
+  box.hidden = false;
+  createNova(canvas, level);
+};
+
+export const stopChecking = (selector: string) => {
+  const box = document.querySelector<HTMLElement>(selector);
+  if (!box) return;
+  box.hidden = true;
+  box.textContent = "";
 };
