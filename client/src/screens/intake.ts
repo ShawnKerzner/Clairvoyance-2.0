@@ -6,6 +6,7 @@ import { renderUnderstanding } from "./understanding.ts";
 import { showScreen } from "../app.ts";
 import { renderLogin } from "./login.ts";
 import { renderApiKey } from "./apiKey.ts";
+import { createNova } from "../nova.ts";
 
 export const renderExerciseIntake = () => {
   app.innerHTML = `
@@ -13,7 +14,11 @@ export const renderExerciseIntake = () => {
       <main class="card intake-card">
         <h1 class="intake-title">New exercise</h1>
         <p id="exercise-intake-error" class="auth-error"></p>
-        <p id="exercise-intake-loading" hidden>Preparing your exercise… Claude is reading it and getting everything ready. This can take up to a minute.</p>
+        <div id="exercise-intake-loading" class="loading-state" hidden>
+          <canvas class="loading-nova" id="intake-nova" aria-hidden="true"></canvas>
+          <p class="loading-line">Reading your exercise…</p>
+          <p class="loading-sub" id="intake-loading-sub">This usually takes 20 to 40 seconds.</p>
+        </div>
 
         <section id="exercise-section">
           <form id="intake-form" class="intake-form">
@@ -34,14 +39,15 @@ export const renderExerciseIntake = () => {
           </form>
         </section>
 
-        <section id="clarification-section" hidden>
+        <section id="clarification-section" class="clarify" hidden>
+          <p class="clarify-label">One quick question</p>
           <p id="clarification-question"></p>
           <form id="clarification-form">
             <label for="clarification-answer">Your answer</label>
             <textarea id="clarification-answer" rows="3"></textarea>
             <button type="submit">Continue</button>
           </form>
-          <button type="button" id="edit-exercise-btn">Edit exercise</button>
+          <button type="button" id="edit-exercise-btn" class="text-link">Edit exercise</button>
         </section>
 
         <div class="key-footer"><span></span><a href="#" id="logout-link">Log out</a></div>
@@ -84,8 +90,37 @@ const showClarification = (question: string) => {
   setExerciseLocked(true);
 };
 
+const LOADING_LINES = [
+  "This usually takes 20 to 40 seconds.",
+  "Writing a reference solution you'll see at the end…",
+  "Checking it against test cases…",
+];
+let loadingLineTimer: number | undefined;
+
+// While loading: start a fresh spell (it needs to be visible to size itself) and rotate the quiet line
+const startLoadingVisuals = () => {
+  const oldCanvas = findElement<HTMLCanvasElement>("#intake-nova");
+  const canvas = oldCanvas.cloneNode() as HTMLCanvasElement;
+  oldCanvas.replaceWith(canvas);
+  createNova(canvas, 1);
+  const sub = findElement("#intake-loading-sub");
+  let index = 0;
+  sub.textContent = LOADING_LINES[0];
+  window.clearInterval(loadingLineTimer);
+  loadingLineTimer = window.setInterval(() => {
+    if (!sub.isConnected) {
+      window.clearInterval(loadingLineTimer);
+      return;
+    }
+    index = (index + 1) % LOADING_LINES.length;
+    sub.textContent = LOADING_LINES[index];
+  }, 4000);
+};
+
 const setLoading = (loading: boolean) => {
   findElement<HTMLElement>("#exercise-intake-loading").hidden = !loading;
+  if (loading) startLoadingVisuals();
+  else window.clearInterval(loadingLineTimer);
   document
     .querySelectorAll<HTMLButtonElement>("#app button")
     .forEach((button) => {
