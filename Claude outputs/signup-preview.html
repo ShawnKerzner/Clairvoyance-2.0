@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clairvoyance signup preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300,100;1,9..144,300,100&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #0b0f24;
+    --night-2: #11163a;
+    --violet: #7dd3fc;
+    --violet-soft: rgba(125, 211, 252, 0.35);
+    --teal: #5eead4;
+    --text: #e9e7f5;
+    --text-dim: #a5a3c2;
+    --amber: #f5c27a;
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--night);
+    color: var(--text);
+    font-family: "DM Sans", sans-serif;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 16px;
+  }
+  .aurora {
+    position: fixed;
+    inset: -20%;
+    background:
+      radial-gradient(40% 35% at 25% 30%, rgba(56, 189, 248, 0.30), transparent 70%),
+      radial-gradient(35% 30% at 75% 65%, rgba(99, 102, 241, 0.30), transparent 70%),
+      radial-gradient(45% 40% at 60% 20%, rgba(14, 116, 144, 0.35), transparent 70%);
+    filter: blur(40px);
+    animation: drift 28s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+  }
+  @keyframes drift {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(4%, -3%) rotate(8deg); }
+  }
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: clamp(400px, 30vw, 620px);
+    padding: clamp(40px, 3.2vw, 64px) clamp(36px, 2.8vw, 56px) clamp(32px, 2.4vw, 48px);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 20px 60px rgba(5, 6, 20, 0.6);
+    text-align: center;
+  }
+  .spell {
+    position: relative;
+    width: clamp(120px, 9vw, 180px);
+    height: clamp(120px, 9vw, 180px);
+    margin: -10px auto 6px;
+  }
+  .spell .core {
+    position: absolute;
+    inset: 35%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #dff4ff 35%, rgba(125, 211, 252, 0.6) 70%, transparent 100%);
+    box-shadow: 0 0 24px 8px rgba(186, 230, 253, 0.8), 0 0 60px 20px rgba(56, 189, 248, 0.35);
+    animation: pulse 3.5s ease-in-out infinite;
+  }
+  .spell .rays {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(224, 242, 254, 0.55) 0deg 2deg, transparent 2deg 15deg);
+    -webkit-mask: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 30%, transparent 68%);
+    mask: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 30%, transparent 68%);
+    animation: spin 24s linear infinite;
+  }
+  .spell .rays.slow {
+    background: repeating-conic-gradient(from 7deg, rgba(186, 230, 253, 0.35) 0deg 1deg, transparent 1deg 22deg);
+    animation: spin 40s linear infinite reverse;
+  }
+  .spell .spark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #f0f9ff;
+    box-shadow: 0 0 6px 2px rgba(186, 230, 253, 0.9);
+    opacity: 0;
+    animation: float 4s ease-out infinite;
+  }
+  .spell .spark:nth-child(3) { --x: -46px; --y: -30px; animation-delay: 0s; }
+  .spell .spark:nth-child(4) { --x: 40px; --y: -42px; animation-delay: 0.7s; }
+  .spell .spark:nth-child(5) { --x: 50px; --y: 22px; animation-delay: 1.4s; }
+  .spell .spark:nth-child(6) { --x: -36px; --y: 44px; animation-delay: 2.1s; }
+  .spell .spark:nth-child(7) { --x: 6px; --y: -54px; animation-delay: 2.8s; }
+  .spell .spark:nth-child(8) { --x: -54px; --y: 6px; animation-delay: 3.4s; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50% { transform: scale(1.12); opacity: 1; }
+  }
+  @keyframes float {
+    0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1); opacity: 0; }
+  }
+  h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 300;
+    font-variation-settings: "SOFT" 100, "opsz" 72;
+    font-size: clamp(44px, 3.4vw, 68px);
+    letter-spacing: 0.5px;
+    margin: 0;
+  }
+  .tagline {
+    font-family: "Fraunces", serif;
+    font-weight: 300;
+    font-variation-settings: "SOFT" 100, "opsz" 72;
+    color: var(--text);
+    font-size: clamp(19px, 1.4vw, 26px);
+    margin: 4px 0 clamp(28px, 2vw, 40px);
+  }
+  .error {
+    color: var(--amber);
+    font-size: clamp(14px, 0.95vw, 17px);
+    min-height: 20px;
+    margin: 0 0 8px;
+    text-align: left;
+  }
+  form { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+  label { font-size: clamp(13px, 0.9vw, 16px); color: var(--text-dim); margin-bottom: -8px; }
+  input {
+    width: 100%;
+    padding: clamp(13px, 0.9vw, 17px) clamp(16px, 1.1vw, 20px);
+    font: inherit;
+    font-size: clamp(15px, 1vw, 18px);
+    color: var(--text);
+    background: rgba(11, 15, 36, 0.55);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+  input:focus { border-color: var(--violet); box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.15), 0 0 24px rgba(125, 211, 252, 0.2); }
+  button {
+    margin-top: 8px;
+    padding: clamp(13px, 0.9vw, 17px);
+    font: inherit;
+    font-weight: 500;
+    font-size: clamp(15px, 1vw, 18px);
+    color: #0b0f24;
+    background: linear-gradient(135deg, #e0f2fe, #7dd3fc 55%, #a5b4fc);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 24px rgba(125, 211, 252, 0.35);
+    transition: box-shadow 0.4s, transform 0.2s;
+  }
+  button:hover { box-shadow: 0 0 36px rgba(125, 211, 252, 0.55); }
+  button:active { transform: scale(0.98); }
+  .switch { margin-top: 22px; font-size: clamp(14px, 0.95vw, 17px); color: var(--text-dim); }
+  .switch a { color: var(--violet); text-decoration: none; }
+  .switch a:hover { text-decoration: underline; }
+  /* Show code characters exactly as typed (no ligatures like === joined into one symbol) */
+  textarea, pre, code, input, .exercise-text, .ref-text { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+  .logo-nova {
+    --logo: clamp(384px, 27vw, 544px);
+    display: block; width: var(--logo); height: var(--logo); opacity: 0.92;
+    margin: calc(var(--logo) * -0.33) 0 calc(var(--logo) * -0.28) calc(50% - var(--logo) / 2);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"></div>
+  <canvas class="sky" id="sky" aria-hidden="true"></canvas>
+  <main class="card">
+    <canvas class="logo-nova" id="logo-nova" aria-hidden="true"></canvas>
+    <h1>Clairvoyance</h1>
+    <p class="tagline">Solve coding exercises, one step at a time</p>
+    <p class="error">Passwords don't match.</p>
+    <form onsubmit="event.preventDefault()">
+      <label for="u">Username</label>
+      <input id="u" placeholder="charles" autocomplete="off">
+      <label for="p">Password</label>
+      <input id="p" type="password" placeholder="••••••••">
+      <label for="c">Confirm password</label>
+      <input id="c" type="password" placeholder="••••••••">
+      <button type="submit">Create account</button>
+    </form>
+    <p class="switch">Already have an account? <a href="#">Log in</a></p>
+  </main>
+  <script>
+    const canvas = document.getElementById("sky");
+    const ctx = canvas.getContext("2d");
+
+    let width = 0, height = 0;
+    let stars = [];
+    let drift = 0;
+
+    // Three depth layers: far stars are small and move little, near ones are brighter and move more
+    const layers = [
+      { count: 140, depth: 6, size: [0.4, 0.9], alpha: [0.25, 0.55] },
+      { count: 70, depth: 14, size: [0.7, 1.3], alpha: [0.35, 0.75] },
+      { count: 26, depth: 26, size: [1.1, 1.8], alpha: [0.5, 0.9] },
+    ];
+    const rand = (min, max) => min + Math.random() * (max - min);
+
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      stars = [];
+      layers.forEach((layer, index) => {
+        for (let i = 0; i < layer.count; i++) {
+          stars.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: rand(...layer.size),
+            a: rand(...layer.alpha),
+            depth: layer.depth,
+            near: index === 2,
+            phase: Math.random() * Math.PI * 2,
+            speed: rand(0.4, 1.2),
+          });
+        }
+      });
+    };
+
+    // Every star drifts slowly to the right; nearer stars (bigger depth) drift faster, then wrap around
+    const wrap = (value, size) => ((value % size) + size) % size;
+    const position = (star) => ({
+      x: wrap(star.x + drift * star.depth, width),
+      y: wrap(star.y - drift * star.depth * 0.15, height),
+    });
+
+    // A path: 4-6 stars, each a short hop forward from the last, avoiding the card in the middle
+    let paths = [];
+    const newPath = () => {
+      const candidates = stars.filter((s) => s.depth >= 14);
+      let current = candidates[Math.floor(Math.random() * candidates.length)];
+      const nodes = [current];
+      const direction = Math.random() < 0.5 ? 1 : -1;
+      for (let i = 0; i < 5; i++) {
+        const next = candidates
+          .filter((s) => !nodes.includes(s))
+          .map((s) => ({ s, dx: (s.x - current.x) * direction, d: Math.hypot(s.x - current.x, s.y - current.y) }))
+          .filter((c) => c.dx > 30 && c.d > 70 && c.d < 230)
+          .sort((p, q) => p.d - q.d)[Math.floor(Math.random() * 3)];
+        if (!next) break;
+        nodes.push(next.s);
+        current = next.s;
+      }
+      if (nodes.length >= 4) paths.push({ nodes, start: performance.now() });
+    };
+
+    const DRAW = 3200, HOLD = 1800, FADE = 2200;
+
+    // Draws one path; returns false once it has fully faded (or a star wrapped), so it can be removed
+    const drawPath = (path, now) => {
+      const t = now - path.start;
+      const fade = t < DRAW + HOLD ? 1 : Math.max(0, 1 - (t - DRAW - HOLD) / FADE);
+      const progress = Math.min(1, t / DRAW) * (path.nodes.length - 1);
+      const points = path.nodes.map(position);
+      // If a star in the path just wrapped to the other edge, end this path quietly
+      for (let i = 1; i < points.length; i++) {
+        if (Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y) > 400) {
+          return false;
+        }
+      }
+
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(186, 230, 253, ${0.55 * fade})`;
+      ctx.shadowColor = "rgba(125, 211, 252, 0.9)";
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        if (progress >= i) {
+          ctx.lineTo(points[i].x, points[i].y);
+        } else if (progress > i - 1) {
+          const part = progress - (i - 1);
+          ctx.lineTo(points[i - 1].x + (points[i].x - points[i - 1].x) * part, points[i - 1].y + (points[i].y - points[i - 1].y) * part);
+          break;
+        }
+      }
+      ctx.stroke();
+
+      // Each star along the path lights up as the line reaches it
+      points.forEach((p, i) => {
+        if (progress < i) return;
+        const glow = fade * Math.min(1, (progress - i) * 2 + 0.3);
+        ctx.fillStyle = `rgba(240, 249, 255, ${glow})`;
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      return fade > 0;
+    };
+
+    const frame = (now) => {
+      drift = (now / 1000) * 0.15;
+      ctx.clearRect(0, 0, width, height);
+
+      for (const star of stars) {
+        const p = position(star);
+        const twinkle = 0.75 + 0.25 * Math.sin(now / 1000 * star.speed + star.phase);
+        ctx.fillStyle = `rgba(224, 242, 254, ${star.a * twinkle})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, star.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      paths = paths.filter((path) => drawPath(path, now));
+      requestAnimationFrame(frame);
+    };
+
+    window.addEventListener("resize", resize);
+
+    resize();
+    requestAnimationFrame(frame);
+    setTimeout(newPath, 1200);
+    setInterval(() => { if (paths.length < 2) newPath(); }, 5000);
+  </script>
+  <script>
+    const createNova = (canvas, startLevel) => {
+      const ctx = canvas.getContext("2d");
+      let size = 0, cx = 0, cy = 0;
+      const resize = () => {
+        const dpr = window.devicePixelRatio || 1;
+        size = canvas.clientWidth;
+        canvas.width = canvas.height = size * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        cx = cy = size / 2;
+      };
+      resize();
+      window.addEventListener("resize", resize);
+
+      // Settings per level: particle count, swirl speed, spread, brightness, spike length, seconds between shockwaves
+      const LEVELS = {
+        0: { count: 35,  swirl: 0.4, spread: 0.15, glow: 0.5, reach: 0.34, swell: 14.0, glints: 1, pulse: 0.08, speed: 0.45 },
+        1: { count: 60,  swirl: 0.6, spread: 0.18, glow: 0.65, reach: 0.42, swell: 5.0, glints: 2 },
+        2: { count: 110, swirl: 0.9, spread: 0.22, glow: 0.85, reach: 0.56, swell: 4.0, glints: 3 },
+        3: { count: 170, swirl: 1.3, spread: 0.26, glow: 1.05, reach: 0.72, swell: 3.0, glints: 5 },
+        4: { count: 240, swirl: 1.8, spread: 0.30, glow: 1.3,  reach: 0.9,  swell: 2.0, glints: 7 },
+      };
+      for (const k of Object.keys(LEVELS)) { LEVELS[k].pulse ??= 1; LEVELS[k].speed ??= 1; }
+      let target = LEVELS[startLevel];
+      const cur = { ...LEVELS[startLevel] };
+      let bursting = 0;
+      let clock = 0, lastNow = null;
+      const rand = (a, b) => a + Math.random() * (b - a);
+      const palette = [[224, 242, 254], [186, 230, 253], [125, 211, 252], [167, 139, 250], [94, 234, 212]];
+
+      const makeParticle = () => ({
+        angle: rand(0, Math.PI * 2),
+        radius: rand(0.02, 0.12),
+        speed: rand(0.4, 1.4) * (Math.random() < 0.5 ? 1 : 0.6),
+        drift: rand(0.004, 0.02),
+        wobble: rand(0, Math.PI * 2),
+        size: rand(0.6, 2.2),
+        life: rand(0.4, 1),
+        color: palette[Math.floor(Math.random() * palette.length)],
+      });
+      const particles = Array.from({ length: 320 }, makeParticle);
+      // Light streaks: many thin rays, each with its own length, brightness and flicker
+      const streaks = Array.from({ length: 48 }, () => ({
+        angle: rand(0, Math.PI * 2), len: rand(0.35, 1), width: rand(0.6, 2.4),
+        phase: rand(0, 20), rate: rand(0.4, 1.6), alpha: rand(0.25, 0.8),
+      }));
+      // Glints: four-pointed sparkles that twinkle in and out around the core
+      const glints = Array.from({ length: 21 }, () => ({ angle: rand(0, Math.PI * 2), dist: rand(0.05, 0.12), born: rand(-3, 0), life: rand(1.6, 3), size: rand(1.2, 2.6), curve: rand(-0.6, 0.6), reach: rand(0.3, 0.5) }));
+      let swellStart = -10;
+
+      const frame = (now) => {
+        clock += (now - (lastNow ?? now)) / 1000 * (cur.speed ?? 1);
+        lastNow = now;
+        const t = clock;
+        const sp = cur.speed ?? 1;
+        for (const k of Object.keys(cur)) cur[k] += (target[k] - cur[k]) * 0.03;
+        const R = size / 2;
+        ctx.clearRect(0, 0, size, size);
+        ctx.globalCompositeOperation = "lighter";
+
+        // Breathing halo
+        const breathe = 1 + (0.06 * Math.sin(t * 1.3) + 0.03 * Math.sin(t * 3.7)) * (cur.pulse ?? 1);
+        const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.9 * breathe);
+        halo.addColorStop(0, `rgba(186, 230, 253, ${0.32 * cur.glow})`);
+        halo.addColorStop(0.4, `rgba(99, 102, 241, ${0.12 * cur.glow})`);
+        halo.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = halo;
+        ctx.fillRect(0, 0, size, size);
+
+        // A swell of power every few seconds: everything brightens and stretches, then relaxes
+        if (t - swellStart > cur.swell) swellStart = t;
+        const sk = (t - swellStart) / 1.6;
+        const swell = sk < 1 ? Math.sin(sk * Math.PI) : 0;
+        const pulse = cur.pulse ?? 1;
+        const power = 1 + swell * 0.35 * pulse + bursting * 2.5;
+
+        // Radiant light streaks, each flickering and stretching on its own
+        for (const st of streaks) {
+          const flick = 0.65 + 0.25 * Math.sin(t * st.rate + st.phase) + 0.1 * Math.sin(t * st.rate * 3.3 + st.phase * 2);
+          const len = R * cur.reach * st.len * flick * power;
+          const a = st.angle + t * 0.04;
+          const ex = cx + Math.cos(a) * len, ey = cy + Math.sin(a) * len;
+          const g = ctx.createLinearGradient(cx, cy, ex, ey);
+          g.addColorStop(0, `rgba(255, 255, 255, ${st.alpha * cur.glow * 0.9})`);
+          g.addColorStop(0.35, `rgba(186, 230, 253, ${st.alpha * cur.glow * 0.45})`);
+          g.addColorStop(1, "rgba(125, 211, 252, 0)");
+          ctx.strokeStyle = g;
+          ctx.lineWidth = st.width * (0.7 + swell * 0.5 * pulse);
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+        }
+
+        // Swirling gas: each particle orbits unevenly and drifts outward, then is reborn near the core
+        const active = Math.round(cur.count);
+        for (let i = 0; i < active; i++) {
+          const p = particles[i];
+          p.angle += (p.speed * cur.swirl * 0.012 * sp) / (0.3 + p.radius * 3);
+          p.radius += p.drift * (0.4 + cur.swirl * 0.3) * 0.08 * sp + bursting * 0.03;
+          p.wobble += 0.03 * sp;
+          const maxR = cur.spread + bursting * 0.8;
+          if (p.radius > maxR || p.radius > 0.98) Object.assign(p, makeParticle());
+          const fade = Math.max(0, 1 - p.radius / maxR);
+          const r = R * p.radius * (1 + 0.08 * Math.sin(p.wobble));
+          const x = cx + Math.cos(p.angle) * r;
+          const y = cy + Math.sin(p.angle) * r * 0.92;
+          const alpha = p.life * fade * Math.min(1, cur.glow);
+          ctx.fillStyle = `rgba(${p.color[0]}, ${p.color[1]}, ${p.color[2]}, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(x, y, p.size * (0.7 + cur.glow * 0.4), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Soft sparks drifting outward along gently curving paths, then fading
+        const shown = Math.round(cur.glints * 3);
+        for (let i = 0; i < shown; i++) {
+          const gl = glints[i];
+          let k = (t - gl.born) / gl.life;
+          if (k > 1) { Object.assign(gl, { angle: rand(0, Math.PI * 2), dist: rand(0.05, 0.12), born: t + rand(0, 0.8), life: rand(1.6, 3), size: rand(1.2, 2.6), curve: rand(-0.6, 0.6), reach: rand(0.35, 0.6) * cur.reach }); continue; }
+          if (k < 0) continue;
+          const ease = 1 - Math.pow(1 - k, 2);
+          const dist = gl.dist + (gl.reach || 0.4) * ease;
+          const ang = gl.angle + (gl.curve || 0) * ease;
+          const gx = cx + Math.cos(ang) * R * dist, gy = cy + Math.sin(ang) * R * dist;
+          const alpha = Math.sin(Math.min(1, k * 1.4) * Math.PI) * 0.95 + (k < 0.3 ? 0 : 0) ;
+          ctx.fillStyle = `rgba(240, 249, 255, ${Math.max(0, alpha)})`;
+          ctx.shadowColor = "rgba(186, 230, 253, 1)";
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(gx, gy, gl.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        // Flickering white-hot core
+        const flick = (1 + (0.08 * Math.sin(t * 7.3) + 0.05 * Math.sin(t * 13.1)) * pulse) * (1 + swell * 0.25 * pulse) + bursting * 2;
+        const coreR = R * 0.1 * flick * (0.85 + cur.glow * 0.25);
+        const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 2.6);
+        core.addColorStop(0, "rgba(255, 255, 255, 1)");
+        core.addColorStop(0.35, `rgba(240, 249, 255, ${0.9 * Math.min(1, cur.glow)})`);
+        core.addColorStop(0.7, `rgba(125, 211, 252, ${0.35 * cur.glow})`);
+        core.addColorStop(1, "rgba(125, 211, 252, 0)");
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(cx, cy, coreR * 2.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalCompositeOperation = "source-over";
+        if (bursting) bursting = Math.min(1, bursting + 0.02);
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+
+      return {
+        setLevel: (n) => { target = LEVELS[n]; bursting = 0; canvas.style.opacity = 1; },
+        burst: () => { bursting = 0.01; setTimeout(() => { canvas.style.opacity = 0; }, 700); },
+      };
+    };
+    createNova(document.getElementById("logo-nova"), 0);
+  </script>
+</body>
+</html>
