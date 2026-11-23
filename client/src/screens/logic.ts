@@ -1,7 +1,7 @@
 import { app, findElement, showError, showScreen } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
-import { showMessage, setBusy, handleAuthErrors, setupExitLink } from "../screenHelpers.ts";
+import { showMessage, setBusy, handleAuthErrors, setupExitLink, stageRow, setupStudyScreen } from "../screenHelpers.ts";
 import { renderImplementation } from "./implementation.ts";
 
 type Exercise = {
@@ -13,35 +13,45 @@ type Exercise = {
 
 export const renderLogic = (exercise: Exercise) => {
   app.innerHTML = `
-    <h1>Logic Walkthrough</h1>
-    <p id="logic-error"></p>
+    ${stageRow("plan")}
+    <div class="stage-page">
+      <div class="stage-grid">
+        <aside class="panel" id="logic-exercise">
+          <p class="panel-label">Your exercise</p>
+          <p class="exercise-text" id="logic-exercise-text"></p>
+          <section class="panel-section" id="logic-plan">
+            <p class="panel-label">Your plan</p>
+            <p class="plan-empty">Your steps will appear here.</p>
+            <ol class="plan-list" id="logic-steps"></ol>
+          </section>
+        </aside>
 
-    <section id="logic-exercise">
-      <h2>Your exercise</h2>
-      <p id="logic-exercise-text"></p>
-    </section>
-
-    <section id="logic-plan">
-      <h2>Your plan</h2>
-      <ol id="logic-steps"></ol>
-    </section>
-
-    <section id="logic-task">
-      <form id="logic-form">
-        <label for="logic-input" id="logic-label">What's your next step? Say what happens and which tool you'll use.</label>
-        <textarea id="logic-input" rows="4" placeholder="e.g. Go through each number with a for loop and..."></textarea>
-        <p id="logic-attempt">Attempt 1 of 5</p>
-        <p id="logic-feedback" hidden></p>
-        <p id="logic-hint" hidden></p>
-        <button type="submit">Add step</button>
-        <button type="button" id="logic-skip-btn" hidden>Skip this case</button>
-        <button type="button" id="logic-hint-btn">Get a hint</button>
-        <button type="button" id="logic-done-btn">I'm done planning</button>
-      </form>
-    </section>
-
-    <a href="#" id="exit-exercise-link">Exit exercise</a>
-    <a href="#" id="logout-link">Logout</a>
+        <main class="card task" id="logic-task">
+          <h1>Plan your steps</h1>
+          <p class="reassure">Hints are free: they never use up your attempts.</p>
+          <p id="logic-error" class="auth-error"></p>
+          <form id="logic-form" class="task-form">
+            <p id="logic-feedback" hidden></p>
+            <p id="logic-hint" hidden></p>
+            <label for="logic-input" id="logic-label" class="task-question">What's your next step? Say what happens and which tool you'll use.</label>
+            <textarea id="logic-input" rows="4" placeholder="Go through each number with a for loop and..."></textarea>
+            <div class="task-row">
+              <p id="logic-attempt">Attempt 1 of 5</p>
+              <div class="task-actions">
+                <button type="button" id="logic-skip-btn" hidden>Skip this case</button>
+                <button type="button" id="logic-hint-btn">Get a hint</button>
+                <button type="submit">Add step</button>
+              </div>
+            </div>
+            <button type="button" id="logic-done-btn" class="wide-secondary">I'm done planning</button>
+          </form>
+          <div class="key-footer">
+            <a href="#" id="exit-exercise-link">Exit exercise</a>
+            <a href="#" id="logout-link">Log out</a>
+          </div>
+        </main>
+      </div>
+    </div>
   `;
   findElement("#logic-exercise-text").textContent = exercise.exerciseText;
   logOut("#logic-error");
@@ -51,6 +61,7 @@ export const renderLogic = (exercise: Exercise) => {
   setupSkipButton(exercise);
   setupLogicHintButton(exercise);
   setupDoneButton(exercise);
+  setupStudyScreen();
 };
 
 let answeringEdgeCase = false;

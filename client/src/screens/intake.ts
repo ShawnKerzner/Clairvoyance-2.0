@@ -117,6 +117,15 @@ const startLoadingVisuals = () => {
   }, 4000);
 };
 
+// Stage-complete moment: the spell brightens and the line says the exercise is ready
+const showReady = () => {
+  window.clearInterval(loadingLineTimer);
+  const loading = findElement("#exercise-intake-loading");
+  loading.classList.add("ready");
+  findElement("#exercise-intake-loading .loading-line").textContent = "Your exercise is ready";
+  findElement("#intake-loading-sub").textContent = "Next: explain it in your own words";
+};
+
 const setLoading = (loading: boolean) => {
   findElement<HTMLElement>("#exercise-intake-loading").hidden = !loading;
   if (loading) startLoadingVisuals();
@@ -162,6 +171,8 @@ const submitExercise = async (body: object) => {
       return;
     }
 
+    showReady();
+    await new Promise((resolve) => window.setTimeout(resolve, 2200));
     showScreen(() => renderUnderstanding(data));
   } catch (error) {
     showError(
