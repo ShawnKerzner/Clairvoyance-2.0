@@ -1,7 +1,7 @@
 import { app, findElement, showError, showScreen } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
-import { showMessage, setBusy, handleAuthErrors, setupExitLink, stageRow, setupStudyScreen } from "../screenHelpers.ts";
+import { showMessage, setBusy, handleAuthErrors, setupExitLink, stageRow, setupStudyScreen, setAttempt, showYouWrote, startChecking, stopChecking } from "../screenHelpers.ts";
 import { renderImplementation } from "./implementation.ts";
 
 type Exercise = {
@@ -31,8 +31,10 @@ export const renderLogic = (exercise: Exercise) => {
           <p class="reassure">Hints are free: they never use up your attempts.</p>
           <p id="logic-error" class="auth-error"></p>
           <form id="logic-form" class="task-form">
-            <p id="logic-feedback" hidden></p>
-            <p id="logic-hint" hidden></p>
+            <div id="logic-checking" class="checking" hidden></div>
+            <p id="logic-you-wrote" class="you-wrote" hidden></p>
+            <p id="logic-feedback" class="tutor-msg" hidden></p>
+            <p id="logic-hint" class="hint-msg" hidden></p>
             <label for="logic-input" id="logic-label" class="task-question">What's your next step? Say what happens and which tool you'll use.</label>
             <textarea id="logic-input" rows="4" placeholder="Go through each number with a for loop and..."></textarea>
             <div class="task-row">
@@ -62,6 +64,15 @@ export const renderLogic = (exercise: Exercise) => {
   setupLogicHintButton(exercise);
   setupDoneButton(exercise);
   setupStudyScreen();
+  clearSuccessOnTyping();
+};
+
+// "Step added." only stays until the student starts writing the next step
+const clearSuccessOnTyping = () => {
+  findElement("#logic-input").addEventListener("input", () => {
+    const feedback = findElement<HTMLElement>("#logic-feedback");
+    if (feedback.classList.contains("success")) feedback.hidden = true;
+  });
 };
 
 let answeringEdgeCase = false;
@@ -91,8 +102,7 @@ const showLogicState = (logic: Record<string, any> | undefined) => {
     submitButton.textContent = "Answer";
     skipButton.hidden = pending.required;
     doneButton.hidden = true;
-    findElement("#logic-attempt").textContent =
-      `Attempt ${pending.attempts.length + 1} of 5`;
+    setAttempt("#logic-attempt", pending.attempts.length + 1);
   } else {
     label.textContent =
       "What's your next step? Say what happens and which tool you'll use.";
@@ -100,8 +110,7 @@ const showLogicState = (logic: Record<string, any> | undefined) => {
     skipButton.hidden = true;
     doneButton.hidden = false;
     const attemptsUsed = logic?.current?.attempts.length ?? 0;
-    findElement("#logic-attempt").textContent =
-      `Attempt ${attemptsUsed + 1} of 5`;
+    setAttempt("#logic-attempt", attemptsUsed + 1);
   }
 };
 
@@ -117,6 +126,10 @@ const setupLogicForm = (exercise: Exercise) => {
     const input = findElement<HTMLTextAreaElement>("#logic-input");
     showError("#logic-error", "");
     setBusy(true);
+    findElement<HTMLElement>("#logic-you-wrote").hidden = true;
+    findElement("#logic-feedback").classList.remove("success");
+    findElement<HTMLElement>("#logic-feedback").hidden = true;
+    startChecking("#logic-checking", 2, answeringEdgeCase ? "Checking your answer…" : "Checking your step…");
 
     try {
       const response = answeringEdgeCase
@@ -135,9 +148,9 @@ const setupLogicForm = (exercise: Exercise) => {
       }
 
       if (data.status === "WEAK") {
+        showYouWrote("#logic-you-wrote", input.value.trim());
         showMessage("#logic-feedback", data.feedback);
-        findElement("#logic-attempt").textContent =
-          `Attempt ${data.attemptNumber} of 5`;
+        setAttempt("#logic-attempt", data.attemptNumber);
         return;
       }
 
@@ -146,11 +159,16 @@ const setupLogicForm = (exercise: Exercise) => {
         "#logic-feedback",
         data.status === "SOLID" ? "Step added." : data.note,
       );
+      findElement("#logic-feedback").classList.add("success");
+      findElement<HTMLElement>("#logic-hint").hidden = true;
       await refreshLogic();
     } catch {
       showError("#logic-error", "Can't reach the server, please try again.");
     } finally {
-      if (document.querySelector("#logic-form")) setBusy(false);
+      if (document.querySelector("#logic-form")) {
+        setBusy(false);
+        stopChecking("#logic-checking");
+      }
     }
   });
 };
@@ -204,8 +222,12 @@ const setupLogicHintButton = (exercise: Exercise) => {
 
 const setupDoneButton = (exercise: Exercise) => {
   findElement("#logic-done-btn").addEventListener("click", async () => {
-    showMessage("#logic-feedback", "Checking your whole plan…");
+    showError("#logic-error", "");
+    findElement("#logic-feedback").classList.remove("success");
+    findElement<HTMLElement>("#logic-feedback").hidden = true;
+    findElement<HTMLElement>("#logic-you-wrote").hidden = true;
     setBusy(true);
+    startChecking("#logic-checking", 2, "Checking your whole plan…");
     try {
       const response = await postJson(
         `/api/exercises/${exercise.id}/logic/done`,
@@ -225,11 +247,16 @@ const setupDoneButton = (exercise: Exercise) => {
         "#logic-feedback",
         "Your plan is complete! Moving on to writing the code…",
       );
+      findElement("#logic-feedback").classList.add("success");
+      findElement<HTMLElement>("#logic-hint").hidden = true;
       setTimeout(() => showScreen(() => renderImplementation(exercise)), 2000);
     } catch {
       showError("#logic-error", "Can't reach the server, please try again.");
     } finally {
-      if (document.querySelector("#logic-form")) setBusy(false);
+      if (document.querySelector("#logic-form")) {
+        setBusy(false);
+        stopChecking("#logic-checking");
+      }
     }
   });
 };
