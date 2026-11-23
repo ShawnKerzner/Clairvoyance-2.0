@@ -1,7 +1,7 @@
 import { app, findElement, showError, showScreen } from "../app.ts";
 import { logOut } from "../navigation.ts";
 import { postJson } from "../api.ts";
-import { showMessage, setBusy, handleAuthErrors, setupExitLink, stageRow, setupStudyScreen, setAttempt, showYouWrote, startChecking, stopChecking } from "../screenHelpers.ts";
+import { showMessage, setBusy, handleAuthErrors, setupExitLink, stageRow, hideSuccessLater, setupStudyScreen, setAttempt, showYouWrote, startChecking, stopChecking } from "../screenHelpers.ts";
 import { renderImplementation } from "./implementation.ts";
 
 type Exercise = {
@@ -160,6 +160,7 @@ const setupLogicForm = (exercise: Exercise) => {
         data.status === "SOLID" ? "Step added." : data.note,
       );
       findElement("#logic-feedback").classList.add("success");
+      hideSuccessLater("#logic-feedback");
       findElement<HTMLElement>("#logic-hint").hidden = true;
       await refreshLogic();
     } catch {
@@ -248,8 +249,14 @@ const setupDoneButton = (exercise: Exercise) => {
         "Your plan is complete! Moving on to writing the code…",
       );
       findElement("#logic-feedback").classList.add("success");
+      hideSuccessLater("#logic-feedback");
       findElement<HTMLElement>("#logic-hint").hidden = true;
-      setTimeout(() => showScreen(() => renderImplementation(exercise)), 2000);
+      const current = await fetch("/api/exercises/current");
+      const currentData = await current.json();
+      setTimeout(
+        () => showScreen(() => renderImplementation(currentData.exercise)),
+        2000,
+      );
     } catch {
       showError("#logic-error", "Can't reach the server, please try again.");
     } finally {

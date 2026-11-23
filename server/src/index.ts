@@ -220,6 +220,7 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
       currentStage: savedExercise.current_stage,
       assumptions: referenceSolution.solution.assumptions,
       exerciseText: exerciseText,
+      language: language,
       progress: {},
     });
   } catch {
@@ -232,7 +233,7 @@ app.post("/api/exercises", requireAuth, async (req, res) => {
 app.get("/api/exercises/current", requireAuth, async (req, res) => {
   const result = await pool.query(
     `
-    SELECT id, current_stage, assumptions, exercise_text, progress
+    SELECT id, current_stage, assumptions, exercise_text, language, progress
     FROM exercises
     WHERE user_id = $1 AND current_stage != 'complete'
     ORDER BY created_at DESC
@@ -249,6 +250,7 @@ app.get("/api/exercises/current", requireAuth, async (req, res) => {
       currentStage: result.rows[0].current_stage,
       assumptions: result.rows[0].assumptions,
       exerciseText: result.rows[0].exercise_text,
+      language: result.rows[0].language,
       progress: result.rows[0].progress,
     },
   });

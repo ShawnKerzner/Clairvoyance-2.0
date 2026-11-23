@@ -483,11 +483,50 @@ button.text-link:hover { color: var(--text); }
 .task-question { color: var(--text); font-size: clamp(16px, 1.1vw, 19px); line-height: 1.55; margin-top: 4px; }
 .wide-secondary { width: 100%; margin-top: 8px; }
 
-/* ===== Existing form layout ===== */
-#implementation-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 600px;
+/* ===== Code screen ===== */
+.plan-list li.done { color: var(--text-dim); }
+.plan-list li.done::before { content: "✓"; }
+.plan-list li.current::before { color: var(--night); text-shadow: none; background: #e0f2fe; border-color: #e0f2fe; box-shadow: none; }
+.plan-list li.upcoming { color: rgba(165, 163, 194, 0.6); }
+.plan-list li.upcoming::before { color: var(--text-dim); text-shadow: none; background: none; border-color: rgba(255, 255, 255, 0.18); box-shadow: none; }
+.step-now { margin: 14px 0 0; padding: 14px 16px; border-radius: 12px; background: rgba(125, 211, 252, 0.06); border: 1px solid rgba(125, 211, 252, 0.22); font-size: clamp(14.5px, 1vw, 17px); line-height: 1.6; }
+.code-label { display: block; color: var(--text-dim); font-size: clamp(13px, 0.9vw, 15px); margin: 22px 0 8px; }
+pre.code-so-far {
+  margin: 0; padding: 14px 18px; overflow-x: auto;
+  font-family: var(--mono); font-size: clamp(13px, 0.86vw, 15px); line-height: 1.7;
+  color: rgba(233, 231, 245, 0.75);
+  background: rgba(11, 15, 36, 0.35);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  white-space: pre;
 }
+.task textarea.code { font-family: var(--mono); font-size: clamp(13.5px, 0.9vw, 15.5px); line-height: 1.7; min-height: clamp(120px, 16vh, 190px); max-height: 60vh; tab-size: 2; field-sizing: content; }
+.label-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 22px; }
+.label-row label { margin: 0; }
+.lang-tag {
+  flex: none; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; letter-spacing: 0.5px; color: var(--accent);
+  background: rgba(125, 211, 252, 0.08); border: 1px solid rgba(125, 211, 252, 0.3);
+}
+
+.tip-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+.tip-row .reassure { margin: 0; }
+.task .paste-btn {
+  margin: 0 0 0 auto; padding: 7px 14px; width: auto;
+  font-size: clamp(12.5px, 0.85vw, 14px); font-weight: 400;
+  color: var(--accent); background: none;
+  border: 1px solid rgba(125, 211, 252, 0.35); border-radius: 10px; box-shadow: none;
+}
+.task .paste-btn:hover { background: rgba(125, 211, 252, 0.08); box-shadow: none; }
+
+/* Show code exactly as typed: no ligatures (=== stays three characters) */
+textarea, pre, code, input, .exercise-text {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+.step-now:empty { display: none; }
+
+/* ===== Existing form layout ===== */
+
 

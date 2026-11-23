@@ -147,3 +147,14 @@ export const stopChecking = (selector: string) => {
   box.hidden = true;
   box.textContent = "";
 };
+
+// A green success message fades away by itself after a few seconds
+export const hideSuccessLater = (selector: string) => {
+  const element = findElement<HTMLElement>(selector);
+  const text = element.textContent;
+  window.setTimeout(() => {
+    if (element.isConnected && element.classList.contains("success") && element.textContent === text) {
+      element.hidden = true;
+    }
+  }, 3000);
+};
