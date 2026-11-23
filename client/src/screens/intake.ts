@@ -9,36 +9,46 @@ import { renderApiKey } from "./apiKey.ts";
 
 export const renderExerciseIntake = () => {
   app.innerHTML = `
-    <h1>Copy and paste your exercise into the box below</h1>
-    <p id="exercise-intake-error"></p>
+    <div class="auth-page">
+      <main class="card intake-card">
+        <h1 class="intake-title">New exercise</h1>
+        <p id="exercise-intake-error" class="auth-error"></p>
         <p id="exercise-intake-loading" hidden>Preparing your exercise… Claude is reading it and getting everything ready. This can take up to a minute.</p>
 
-    <section id="exercise-section">
-      <form id="intake-form">
-        <label for="language-selector">Select a language</label>
-        <select id="language-selector">
-          <option value="python">Python</option>
-          <option value="javascript">Javascript</option>
-        </select>
+        <section id="exercise-section">
+          <form id="intake-form" class="intake-form">
+            <label for="language-selector">Which language will you solve it in?</label>
+            <select id="language-selector" class="visually-hidden" tabindex="-1">
+              <option value="python">Python</option>
+              <option value="javascript">Javascript</option>
+            </select>
+            <div class="lang-pills" id="lang-pills" role="radiogroup" aria-label="Language">
+              <button type="button" class="lang-pill" data-lang="javascript" role="radio">JavaScript</button>
+              <button type="button" class="lang-pill" data-lang="python" role="radio">Python</button>
+            </div>
 
-        <label for="exercise-intake">Paste your exercise below</label>
-        <textarea id="exercise-intake" rows="12" placeholder="e.g. Write a function that returns the largest number in an array..."></textarea>
+            <label for="exercise-intake">Paste your exercise</label>
+            <textarea id="exercise-intake" rows="9" placeholder="Write a function that returns the largest number in an array."></textarea>
 
-        <button type="submit">Start Exercise</button>
-      </form>
-    </section>
+            <button type="submit">Start exercise</button>
+          </form>
+        </section>
 
-    <section id="clarification-section" hidden>
-      <p id="clarification-question"></p>
-      <form id="clarification-form">
-        <label for="clarification-answer">Your answer</label>
-        <textarea id="clarification-answer" rows="3"></textarea>
-        <button type="submit">Continue</button>
-      </form>
-      <button type="button" id="edit-exercise-btn">Edit exercise</button>
-    </section>
-    <a href="#" id="logout-link">Logout</a>
+        <section id="clarification-section" hidden>
+          <p id="clarification-question"></p>
+          <form id="clarification-form">
+            <label for="clarification-answer">Your answer</label>
+            <textarea id="clarification-answer" rows="3"></textarea>
+            <button type="submit">Continue</button>
+          </form>
+          <button type="button" id="edit-exercise-btn">Edit exercise</button>
+        </section>
+
+        <div class="key-footer"><span></span><a href="#" id="logout-link">Log out</a></div>
+      </main>
+    </div>
     `;
+  setupLanguagePills();
   setupIntakeForm();
   setupClarificationForm();
   setupEditExercise();
@@ -62,8 +72,9 @@ const setExerciseLocked = (locked: boolean) => {
   findElement<HTMLTextAreaElement>("#exercise-intake").readOnly = locked;
   findElement<HTMLElement>('label[for="language-selector"]').hidden = locked;
   findElement<HTMLSelectElement>("#language-selector").hidden = locked;
+  findElement<HTMLElement>("#lang-pills").hidden = locked;
   findElement<HTMLElement>('label[for="exercise-intake"]').hidden = locked;
-  findElement<HTMLButtonElement>("#intake-form button").hidden = locked;
+  findElement<HTMLButtonElement>('#intake-form button[type="submit"]').hidden = locked;
   findElement<HTMLElement>("#clarification-section").hidden = !locked;
 };
 
@@ -166,4 +177,24 @@ const setupEditExercise = () => {
     findElement<HTMLTextAreaElement>("#clarification-answer").value = "";
     setExerciseLocked(false);
   });
+};
+
+// Language pills: they set the (visually hidden) select, which the form reads as before
+const setupLanguagePills = () => {
+  const select = findElement<HTMLSelectElement>("#language-selector");
+  const pills = document.querySelectorAll<HTMLButtonElement>(".lang-pill");
+  const show = () => {
+    pills.forEach((pill) => {
+      const on = pill.dataset.lang === select.value;
+      pill.classList.toggle("on", on);
+      pill.setAttribute("aria-checked", String(on));
+    });
+  };
+  pills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      select.value = pill.dataset.lang ?? select.value;
+      show();
+    });
+  });
+  show();
 };

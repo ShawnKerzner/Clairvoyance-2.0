@@ -15,6 +15,16 @@
 
 * { box-sizing: border-box; }
 
+/* Anything marked hidden stays hidden, even if a class gives it a display style */
+[hidden] { display: none !important; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0; padding: 0; margin: -1px;
+}
+
 html, body { min-height: 100%; }
 
 body {
@@ -267,21 +277,35 @@ h1, h2 {
   box-shadow: 0 0 40px rgba(110, 231, 183, 0.6);
 }
 
-/* ===== Existing form layout ===== */
-#intake-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 600px;
-}
-
-#intake-form textarea {
+/* ===== Intake ===== */
+.intake-card {
   width: 100%;
-  box-sizing: border-box;
-  font-family: monospace;
+  max-width: clamp(480px, 40vw, 780px);
+  padding: clamp(32px, 3vw, 56px) clamp(28px, 2.8vw, 52px);
+}
+.intake-title { text-align: center; margin: 0 0 clamp(16px, 2.4vh, 26px); font-size: clamp(30px, 2.2vw, 42px); }
+.intake-form { display: flex; flex-direction: column; gap: 10px; }
+.intake-form label { margin-top: 12px; }
+.intake-form textarea { font-family: var(--mono); font-size: clamp(13.5px, 0.9vw, 15.5px); min-height: clamp(150px, 22vh, 260px); }
+.intake-form button[type="submit"] { margin-top: 12px; width: 100%; }
+.lang-pills { display: flex; gap: 10px; }
+.intake-form .lang-pill {
+  flex: 1; padding: 11px 16px;
+  color: var(--text-dim);
+  background: rgba(11, 15, 36, 0.45);
+  border: 1px solid var(--glass-border);
+  box-shadow: none;
+  transition: all 0.35s;
+}
+.intake-form .lang-pill:hover { color: var(--text); border-color: rgba(125, 211, 252, 0.4); background: rgba(11, 15, 36, 0.45); }
+.intake-form .lang-pill.on {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(125, 211, 252, 0.12);
+  box-shadow: 0 0 18px rgba(125, 211, 252, 0.2);
 }
 
-#intake-form,
+/* ===== Existing form layout ===== */
 #clarification-form,
 #understanding-form, 
 #logic-form,
