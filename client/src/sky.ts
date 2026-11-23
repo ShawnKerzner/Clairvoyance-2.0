@@ -3,11 +3,12 @@
 
 type Star = { x: number; y: number; r: number; a: number; depth: number; phase: number; speed: number };
 type Path = { nodes: Star[]; start: number };
-type SkyMode = "full" | "quiet";
+type SkyMode = "full" | "quiet" | "celebrate";
 
 const MODES: Record<SkyMode, { interval: number; maxPaths: number; perTick: number }> = {
   full: { interval: 5000, maxPaths: 2, perTick: 1 },
   quiet: { interval: 15000, maxPaths: 1, perTick: 1 },
+  celebrate: { interval: 3000, maxPaths: 4, perTick: 2 },
 };
 
 let mode: SkyMode = "full";
