@@ -122,6 +122,71 @@ h1, h2 {
 
 [id$="-error"] { color: var(--amber); font-size: clamp(14px, 0.95vw, 16px); }
 
+/* ===== Glass card ===== */
+.card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 20px 60px rgba(5, 6, 20, 0.6);
+}
+
+/* ===== Login and sign-up ===== */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+}
+.auth-card {
+  width: 100%;
+  max-width: clamp(400px, 30vw, 620px);
+  padding: clamp(40px, 3.2vw, 64px) clamp(28px, 2.8vw, 56px) clamp(32px, 2.4vw, 48px);
+  text-align: center;
+}
+.logo-nova {
+  --logo: clamp(384px, 27vw, 544px);
+  display: block;
+  width: var(--logo);
+  height: var(--logo);
+  max-width: none;
+  opacity: 0.92;
+  pointer-events: none;
+  margin: calc(var(--logo) * -0.33) 0 calc(var(--logo) * -0.28) calc(50% - var(--logo) / 2);
+}
+.brand-title {
+  font-size: clamp(44px, 3.4vw, 68px);
+  margin: 0;
+}
+.tagline {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-variation-settings: "SOFT" 100, "opsz" 72;
+  font-size: clamp(19px, 1.4vw, 26px);
+  margin: 4px 0 clamp(28px, 2vw, 40px);
+}
+.auth-error {
+  min-height: 1.4em;
+  margin: 0 0 8px;
+  text-align: left;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+.auth-form label { margin-bottom: -8px; }
+.auth-form button { margin-top: 8px; width: 100%; }
+.switch {
+  margin: 22px 0 0;
+  color: var(--text-dim);
+  font-size: clamp(14px, 0.95vw, 17px);
+}
+.switch a { text-decoration: none; }
+.switch a:hover { text-decoration: underline; }
+
 /* ===== Existing form layout ===== */
 #intake-form {
   display: flex;

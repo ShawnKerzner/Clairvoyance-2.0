@@ -2,19 +2,30 @@ import { postJson } from "../api.ts";
 import { app, showScreen, findElement, showError } from "../app.ts";
 import { showNextScreen } from "../navigation.ts";
 import { renderLogin } from "./login.ts";
+import { createNova } from "../nova.ts";
 
 export const renderSignup = () => {
   app.innerHTML = `
-  <h1>Create An Account</h1>
-  <p id="signup-error"></p>
-  <form id ="signup-form">
-        <input type="text" id="username-signup" placeholder="Username" />
-        <input type="password" id="password-signup" placeholder="Password" />
-        <input type="password" id="password-signup-confirm" placeholder="Confirm your password"/>
-        <button type="submit" id="signup-btn">Create Account</button>
-    </form>
-    <p id="existing-account-line">Already have an account? <a href="#" id="login-link">Click here to login</a>.</p>
+    <div class="auth-page">
+      <main class="card auth-card">
+        <canvas class="logo-nova" id="logo-nova" aria-hidden="true"></canvas>
+        <h1 class="brand-title">Clairvoyance</h1>
+        <p class="tagline">Solve coding exercises, one step at a time</p>
+        <p id="signup-error" class="auth-error"></p>
+        <form id="signup-form" class="auth-form">
+          <label for="username-signup">Username</label>
+          <input type="text" id="username-signup" placeholder="Choose a username" autocomplete="username" />
+          <label for="password-signup">Password</label>
+          <input type="password" id="password-signup" placeholder="Choose a password" autocomplete="new-password" />
+          <label for="password-signup-confirm">Confirm password</label>
+          <input type="password" id="password-signup-confirm" placeholder="Type it again" autocomplete="new-password" />
+          <button type="submit" id="signup-btn">Create account</button>
+        </form>
+        <p id="existing-account-line" class="switch">Already have an account? <a href="#" id="login-link">Log in</a></p>
+      </main>
+    </div>
     `;
+  createNova(findElement<HTMLCanvasElement>("#logo-nova"), 0);
   setupLoginLink();
   setupSignUpForm();
 };
